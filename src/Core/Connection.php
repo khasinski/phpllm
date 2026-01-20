@@ -18,20 +18,22 @@ use PHPLLM\Exceptions\StreamException;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * HTTP connection handler with retry logic and streaming support.
+ * HTTP connection handler with retry logic, streaming support, and circuit breaker.
  */
 final class Connection
 {
     private Client $client;
     private Configuration $config;
+    private ?CircuitBreaker $circuitBreaker;
 
-    public function __construct(?Configuration $config = null)
+    public function __construct(?Configuration $config = null, ?CircuitBreaker $circuitBreaker = null)
     {
         $this->config = $config ?? Configuration::getInstance();
         $this->client = new Client([
             'timeout' => $this->config->getRequestTimeout(),
             'connect_timeout' => 10,
         ]);
+        $this->circuitBreaker = $circuitBreaker ?? new CircuitBreaker();
     }
 
     /**
@@ -173,7 +175,7 @@ final class Connection
     }
 
     /**
-     * Make an HTTP request with retry logic.
+     * Make an HTTP request with retry logic and circuit breaker.
      *
      * @param array<string, string> $headers
      * @param array<string, mixed>|null $body
@@ -184,6 +186,12 @@ final class Connection
         array $headers,
         ?array $body = null,
     ): ResponseInterface {
+        // Extract endpoint base for circuit breaker (host + path without query)
+        $endpoint = $this->getEndpointKey($url);
+
+        // Check circuit breaker before attempting request
+        $this->circuitBreaker?->allowRequest($endpoint);
+
         $attempts = 0;
         $maxRetries = $this->config->getMaxRetries();
 
@@ -197,8 +205,14 @@ final class Connection
                     $options['json'] = $body;
                 }
 
-                return $this->client->request($method, $url, $options);
+                $response = $this->client->request($method, $url, $options);
+
+                // Record success for circuit breaker
+                $this->circuitBreaker?->recordSuccess($endpoint);
+
+                return $response;
             } catch (ClientException $e) {
+                // Client errors (4xx) don't affect circuit breaker - they're valid responses
                 Logger::error("Client error: {$e->getMessage()}", [
                     'status' => $e->getResponse()->getStatusCode(),
                     'url' => $url,
@@ -206,6 +220,8 @@ final class Connection
                 $this->handleClientException($e);
             } catch (ServerException $e) {
                 $attempts++;
+                $this->circuitBreaker?->recordFailure($endpoint);
+
                 Logger::warning("Server error (attempt {$attempts}/{$maxRetries}): {$e->getMessage()}", [
                     'status' => $e->getResponse()->getStatusCode(),
                     'url' => $url,
@@ -223,6 +239,8 @@ final class Connection
                 $this->backoff($attempts);
             } catch (ConnectException $e) {
                 $attempts++;
+                $this->circuitBreaker?->recordFailure($endpoint);
+
                 Logger::warning("Connection error (attempt {$attempts}/{$maxRetries}): {$e->getMessage()}", [
                     'url' => $url,
                 ]);
@@ -239,6 +257,22 @@ final class Connection
                 $this->backoff($attempts);
             }
         }
+    }
+
+    /**
+     * Extract endpoint key for circuit breaker (host + base path).
+     */
+    private function getEndpointKey(string $url): string
+    {
+        $parsed = parse_url($url);
+        $host = $parsed['host'] ?? 'unknown';
+        $path = $parsed['path'] ?? '/';
+
+        // Use first two path segments for grouping
+        $pathParts = array_filter(explode('/', $path));
+        $basePath = '/' . implode('/', array_slice($pathParts, 0, 2));
+
+        return "{$host}{$basePath}";
     }
 
     /**

@@ -140,10 +140,45 @@ final class Logger
      */
     public static function logRequest(string $method, string $url, array $headers, ?array $body = null): void
     {
-        self::debug("API Request: {$method} {$url}", [
+        $safeUrl = self::redactUrlSecrets($url);
+        self::debug("API Request: {$method} {$safeUrl}", [
             'headers' => $headers,
             'body' => $body ? self::truncateBody($body) : null,
         ]);
+    }
+
+    /**
+     * Redact sensitive query parameters from URLs.
+     */
+    private static function redactUrlSecrets(string $url): string
+    {
+        $sensitiveParams = ['key', 'api_key', 'apikey', 'token', 'access_token', 'secret'];
+
+        $parsed = parse_url($url);
+        if (!isset($parsed['query'])) {
+            return $url;
+        }
+
+        parse_str($parsed['query'], $params);
+
+        foreach ($params as $key => $value) {
+            $lowerKey = strtolower($key);
+            foreach ($sensitiveParams as $sensitive) {
+                if (str_contains($lowerKey, $sensitive)) {
+                    $params[$key] = '***REDACTED***';
+                    break;
+                }
+            }
+        }
+
+        $newQuery = http_build_query($params);
+        $base = $parsed['scheme'] . '://' . $parsed['host'];
+        if (isset($parsed['port'])) {
+            $base .= ':' . $parsed['port'];
+        }
+        $base .= $parsed['path'] ?? '';
+
+        return $newQuery ? "{$base}?{$newQuery}" : $base;
     }
 
     /**
