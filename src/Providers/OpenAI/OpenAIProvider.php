@@ -103,7 +103,7 @@ class OpenAIProvider extends BaseProvider implements EmbeddingInterface, ImageGe
     public function generateImages(string $prompt, int $count, array $options = []): array
     {
         $url = $this->getApiBase() . '/images/generations';
-        $model = $options['model'] ?? 'dall-e-3';
+        $model = $options['model'] ?? 'gpt-image-1.5';
 
         $payload = [
             'model' => $model,
@@ -329,6 +329,7 @@ class OpenAIProvider extends BaseProvider implements EmbeddingInterface, ImageGe
             'o3-mini' => ['context' => 200000, 'vision' => true, 'tools' => true],
             'text-embedding-3-small' => ['dimensions' => 1536, 'type' => 'embedding'],
             'text-embedding-3-large' => ['dimensions' => 3072, 'type' => 'embedding'],
+            'gpt-image-1.5' => ['type' => 'image'],
             'dall-e-3' => ['type' => 'image'],
             'dall-e-2' => ['type' => 'image'],
         ];

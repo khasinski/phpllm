@@ -65,6 +65,7 @@ final class PHPLLM
         'text-embedding-ada-002' => 'openai',
 
         // OpenAI Images
+        'gpt-image-1.5' => 'openai',
         'dall-e-3' => 'openai',
         'dall-e-2' => 'openai',
 
@@ -146,7 +147,7 @@ final class PHPLLM
      * Generate an image from a prompt.
      *
      * @param string $prompt Description of the image to generate
-     * @param string|null $model Image model (default: dall-e-3)
+     * @param string|null $model Image model (default: gpt-image-1.5)
      * @param array<string, mixed> $options Additional options (size, quality, style)
      */
     public static function paint(
@@ -154,7 +155,7 @@ final class PHPLLM
         ?string $model = null,
         array $options = []
     ): Image {
-        $model = $model ?? 'dall-e-3';
+        $model = $model ?? 'gpt-image-1.5';
         $provider = self::detectProvider($model);
         $providerInstance = self::getProvider($provider);
 
@@ -171,7 +172,7 @@ final class PHPLLM
      *
      * @param string $prompt Description of the images to generate
      * @param int $count Number of images to generate
-     * @param string|null $model Image model (default: dall-e-3)
+     * @param string|null $model Image model (default: gpt-image-1.5)
      * @param array<string, mixed> $options Additional options
      * @return array<Image>
      */
@@ -181,7 +182,7 @@ final class PHPLLM
         ?string $model = null,
         array $options = []
     ): array {
-        $model = $model ?? 'dall-e-3';
+        $model = $model ?? 'gpt-image-1.5';
         $provider = self::detectProvider($model);
         $providerInstance = self::getProvider($provider);
 
@@ -240,7 +241,7 @@ final class PHPLLM
             return 'openai';
         }
 
-        if (str_starts_with($model, 'text-embedding-') || str_starts_with($model, 'dall-e')) {
+        if (str_starts_with($model, 'text-embedding-') || str_starts_with($model, 'dall-e') || str_starts_with($model, 'gpt-image')) {
             return 'openai';
         }
 

@@ -16,7 +16,7 @@ Inspired by [RubyLLM](https://rubyllm.com/), PHPLLM provides a unified, elegant 
 - 🔧 **Tools** - Function calling with automatic execution
 - 📡 **Streaming** - Real-time response streaming
 - 🧮 **Embeddings** - Generate and compare text embeddings
-- 🎨 **Image Generation** - Create images with DALL-E
+- 🎨 **Image Generation** - Create images with GPT Image 1.5
 - ⚡ **Laravel Ready** - First-class Laravel integration
 
 ## Installation
@@ -162,7 +162,7 @@ $embedding = PHPLLM::embed('Hello', model: 'text-embedding-3-large');
 ### Image Generation
 
 ```php
-// Generate an image
+// Generate an image (uses gpt-image-1.5 by default)
 $image = PHPLLM::paint('A sunset over mountains');
 echo $image->url;
 
@@ -178,6 +178,9 @@ $image = PHPLLM::paint('A cat', options: [
 
 // Multiple images
 $images = PHPLLM::paintMany('A dog', count: 3);
+
+// Use legacy DALL-E if needed
+$image = PHPLLM::paint('A cat', model: 'dall-e-3');
 ```
 
 ## Laravel Integration
