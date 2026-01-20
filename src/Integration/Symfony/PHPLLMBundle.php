@@ -37,9 +37,20 @@ class PHPLLMBundle extends AbstractBundle
             'default_model' => $config['default_model'],
             'request_timeout' => $config['request_timeout'],
             'max_retries' => $config['max_retries'],
+            'ollama_api_base' => $config['ollama_api_base'],
+            'model_aliases' => $config['model_aliases'],
         ]);
 
+        // Store logging config for runtime setup
+        $builder->setParameter('phpllm.logging_enabled', $config['logging_enabled']);
+
         $container->import(__DIR__ . '/Resources/config/services.php');
+    }
+
+    public function boot(): void
+    {
+        // Note: Logging is configured at runtime via the LoggerConfigurator
+        // which is set up in services.php
     }
 
     public function configure(DefinitionConfigurator $definition): void
@@ -73,6 +84,25 @@ class PHPLLMBundle extends AbstractBundle
                     ->min(0)
                     ->max(10)
                     ->info('Maximum number of retries on failure')
+                ->end()
+                ->scalarNode('ollama_api_base')
+                    ->defaultValue('http://localhost:11434')
+                    ->info('Ollama API base URL for local models')
+                ->end()
+                ->booleanNode('logging_enabled')
+                    ->defaultFalse()
+                    ->info('Enable debug logging for API requests/responses')
+                ->end()
+                ->arrayNode('model_aliases')
+                    ->useAttributeAsKey('alias')
+                    ->scalarPrototype()->end()
+                    ->defaultValue([
+                        'fast' => 'gpt-4o-mini',
+                        'smart' => 'gpt-5.2',
+                        'claude' => 'claude-sonnet-4-5-20250929',
+                        'local' => 'llama3.2',
+                    ])
+                    ->info('Model aliases for convenience')
                 ->end()
             ->end();
     }

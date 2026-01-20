@@ -33,6 +33,28 @@ final class Connection
     }
 
     /**
+     * Make a GET request.
+     *
+     * @param array<string, string> $headers
+     * @return array<string, mixed>
+     */
+    public function get(string $url, array $headers = []): array
+    {
+        $startTime = microtime(true);
+
+        Logger::logRequest('GET', $url, $headers, []);
+
+        $response = $this->request('GET', $url, $headers);
+        $content = $response->getBody()->getContents();
+        $decoded = json_decode($content, true) ?? [];
+
+        $duration = microtime(true) - $startTime;
+        Logger::logResponse($response->getStatusCode(), $decoded, $duration);
+
+        return $decoded;
+    }
+
+    /**
      * Make a POST request.
      *
      * @param array<string, string> $headers

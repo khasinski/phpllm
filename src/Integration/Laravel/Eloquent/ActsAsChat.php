@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 use PHPLLM\Core\Chat;
 use PHPLLM\Core\Message;
 use PHPLLM\Exceptions\ApiException;
+use PHPLLM\Integration\Laravel\Events\MessageReceived;
+use PHPLLM\Integration\Laravel\Events\MessageSending;
 use PHPLLM\PHPLLM;
 
 /**
@@ -108,9 +110,20 @@ trait ActsAsChat
     public function ask(string $message, string|array|null $with = null, ?callable $stream = null): Message
     {
         $userMessage = Message::user($message, $with);
+        $model = $this->{$this->getModelColumn()} ?? 'gpt-4o-mini';
+
+        // Dispatch sending event
+        if (function_exists('event')) {
+            event(new MessageSending($userMessage, $model, $this));
+        }
 
         // Get response from AI
         $response = $this->chat()->ask($message, $with, $stream);
+
+        // Dispatch received event
+        if (function_exists('event')) {
+            event(new MessageReceived($response, $model, $this));
+        }
 
         // Persist both messages in a transaction
         DB::transaction(function () use ($userMessage, $response): void {

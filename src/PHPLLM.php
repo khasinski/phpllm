@@ -13,6 +13,8 @@ use PHPLLM\Core\Embedding;
 use PHPLLM\Core\Image;
 use PHPLLM\Exceptions\ConfigurationException;
 use PHPLLM\Providers\Anthropic\AnthropicProvider;
+use PHPLLM\Providers\Gemini\GeminiProvider;
+use PHPLLM\Providers\Ollama\OllamaProvider;
 use PHPLLM\Providers\OpenAI\OpenAIProvider;
 
 /**
@@ -44,6 +46,8 @@ final class PHPLLM
     private static array $providers = [
         'openai' => OpenAIProvider::class,
         'anthropic' => AnthropicProvider::class,
+        'gemini' => GeminiProvider::class,
+        'ollama' => OllamaProvider::class,
     ];
 
     /** @var array<string, string> Model to provider mapping */
@@ -102,9 +106,24 @@ final class PHPLLM
 
         // Gemini
         'gemini-2.0-flash' => 'gemini',
+        'gemini-2.0-flash-lite' => 'gemini',
         'gemini-2.0-pro' => 'gemini',
         'gemini-1.5-pro' => 'gemini',
         'gemini-1.5-flash' => 'gemini',
+        'gemini-1.5-flash-8b' => 'gemini',
+
+        // Ollama (local models)
+        'llama3.2' => 'ollama',
+        'llama3.2:1b' => 'ollama',
+        'llama3.1' => 'ollama',
+        'llama3.1:70b' => 'ollama',
+        'codellama' => 'ollama',
+        'deepseek-coder-v2' => 'ollama',
+        'mistral' => 'ollama',
+        'mixtral' => 'ollama',
+        'phi3' => 'ollama',
+        'gemma2' => 'ollama',
+        'qwen2.5' => 'ollama',
     ];
 
     /**
@@ -128,7 +147,7 @@ final class PHPLLM
     /**
      * Create a new chat instance.
      *
-     * @param string|null $model Model ID or null for default
+     * @param string|null $model Model ID, alias, or null for default
      * @param string|null $provider Provider slug or null to auto-detect
      */
     public static function chat(?string $model = null, ?string $provider = null): Chat
@@ -136,11 +155,22 @@ final class PHPLLM
         $config = Configuration::getInstance();
 
         $model ??= $config->getDefaultModel();
+        $model = $config->resolveModelAlias($model);
         $provider ??= self::detectProvider($model);
 
         $providerInstance = self::getProvider($provider);
 
-        return new Chat($providerInstance, $model);
+        $chat = new Chat($providerInstance, $model);
+
+        // Apply default settings if configured
+        if ($config->getDefaultTemperature() !== null) {
+            $chat->withTemperature($config->getDefaultTemperature());
+        }
+        if ($config->getDefaultMaxTokens() !== null) {
+            $chat->withMaxTokens($config->getDefaultMaxTokens());
+        }
+
+        return $chat;
     }
 
     /**
@@ -278,12 +308,14 @@ final class PHPLLM
             return 'gemini';
         }
 
-        if (str_starts_with($model, 'mistral-') || str_starts_with($model, 'mixtral-')) {
-            return 'mistral';
+        // Ollama local models
+        if (preg_match('/^(llama|codellama|mistral|mixtral|phi|gemma|qwen|deepseek-coder|vicuna|orca|neural-chat)/', $model)) {
+            return 'ollama';
         }
 
-        if (str_starts_with($model, 'deepseek-')) {
-            return 'deepseek';
+        // Models with : are typically Ollama (e.g., llama3.2:1b, mistral:7b)
+        if (str_contains($model, ':')) {
+            return 'ollama';
         }
 
         // Default to configured provider or OpenAI

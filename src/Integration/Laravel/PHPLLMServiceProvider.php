@@ -6,6 +6,7 @@ namespace PHPLLM\Integration\Laravel;
 
 use Illuminate\Support\ServiceProvider;
 use PHPLLM\Core\Configuration;
+use PHPLLM\Core\Logger;
 use PHPLLM\Integration\Laravel\Console\MakeToolCommand;
 use PHPLLM\Integration\Laravel\Console\VerifyCommand;
 use PHPLLM\PHPLLM;
@@ -75,6 +76,18 @@ class PHPLLMServiceProvider extends ServiceProvider
             'default_model' => $config['default_model'] ?? 'gpt-4o-mini',
             'request_timeout' => $config['request_timeout'] ?? 120,
             'max_retries' => $config['max_retries'] ?? 3,
+            'ollama_api_base' => $config['ollama_api_base'] ?? 'http://localhost:11434',
+            'model_aliases' => $config['model_aliases'] ?? [],
         ]);
+
+        // Configure logging if enabled
+        if ($config['logging_enabled'] ?? false) {
+            $channel = $config['logging_channel'] ?? null;
+            $logger = $channel
+                ? $this->app->make('log')->channel($channel)
+                : $this->app->make('log');
+
+            Logger::setLogger($logger);
+        }
     }
 }

@@ -41,6 +41,24 @@ final class Configuration
     private bool $loggingEnabled = false;
     private mixed $logger = null;
 
+    // Model aliases
+    /** @var array<string, string> */
+    private array $modelAliases = [
+        'fast' => 'gpt-4o-mini',
+        'smart' => 'gpt-5.2',
+        'cheap' => 'gpt-4o-mini',
+        'claude' => 'claude-sonnet-4-5-20250929',
+        'opus' => 'claude-opus-4-5-20251101',
+        'sonnet' => 'claude-sonnet-4-5-20250929',
+        'haiku' => 'claude-haiku-4-5-20251101',
+        'gemini' => 'gemini-2.0-flash',
+        'local' => 'llama3.2',
+    ];
+
+    // Default chat settings
+    private ?float $defaultTemperature = null;
+    private ?int $defaultMaxTokens = null;
+
     private function __construct()
     {
     }
@@ -191,6 +209,38 @@ final class Configuration
         return $this;
     }
 
+    /**
+     * Set model aliases.
+     *
+     * @param array<string, string> $aliases
+     */
+    public function setModelAliases(array $aliases): self
+    {
+        $this->modelAliases = array_merge($this->modelAliases, $aliases);
+        return $this;
+    }
+
+    /**
+     * Add a single model alias.
+     */
+    public function addModelAlias(string $alias, string $model): self
+    {
+        $this->modelAliases[$alias] = $model;
+        return $this;
+    }
+
+    public function setDefaultTemperature(?float $temperature): self
+    {
+        $this->defaultTemperature = $temperature;
+        return $this;
+    }
+
+    public function setDefaultMaxTokens(?int $maxTokens): self
+    {
+        $this->defaultMaxTokens = $maxTokens;
+        return $this;
+    }
+
     // Getters
 
     public function getOpenaiApiKey(): ?string
@@ -281,6 +331,35 @@ final class Configuration
     public function getLogger(): mixed
     {
         return $this->logger;
+    }
+
+    /**
+     * Get all model aliases.
+     *
+     * @return array<string, string>
+     */
+    public function getModelAliases(): array
+    {
+        return $this->modelAliases;
+    }
+
+    /**
+     * Resolve a model alias to its full model name.
+     * Returns the original model if no alias exists.
+     */
+    public function resolveModelAlias(string $model): string
+    {
+        return $this->modelAliases[$model] ?? $model;
+    }
+
+    public function getDefaultTemperature(): ?float
+    {
+        return $this->defaultTemperature;
+    }
+
+    public function getDefaultMaxTokens(): ?int
+    {
+        return $this->defaultMaxTokens;
     }
 
     /**
