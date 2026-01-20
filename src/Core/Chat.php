@@ -87,18 +87,32 @@ final class Chat
 
     /**
      * Set the temperature for responses.
+     *
+     * @param float $temperature Value between 0.0 and 2.0
+     *
+     * @throws \InvalidArgumentException If temperature is out of range
      */
     public function withTemperature(float $temperature): self
     {
+        if ($temperature < 0.0 || $temperature > 2.0) {
+            throw new \InvalidArgumentException('Temperature must be between 0.0 and 2.0');
+        }
         $this->temperature = $temperature;
         return $this;
     }
 
     /**
      * Set the maximum tokens for responses.
+     *
+     * @param int $maxTokens Positive integer
+     *
+     * @throws \InvalidArgumentException If maxTokens is not positive
      */
     public function withMaxTokens(int $maxTokens): self
     {
+        if ($maxTokens < 1) {
+            throw new \InvalidArgumentException('Max tokens must be at least 1');
+        }
         $this->maxTokens = $maxTokens;
         return $this;
     }
@@ -271,6 +285,10 @@ final class Chat
         $tool = $this->tools[$toolCall->name] ?? null;
 
         if ($tool === null) {
+            Logger::warning("Unknown tool requested: {$toolCall->name}", [
+                'tool_call_id' => $toolCall->id,
+                'available_tools' => array_keys($this->tools),
+            ]);
             return ['error' => "Unknown tool: {$toolCall->name}"];
         }
 
@@ -282,8 +300,19 @@ final class Chat
             }
 
             return $result;
-        } catch (\Throwable $e) {
-            return ['error' => $e->getMessage()];
+        } catch (\Exception $e) {
+            // Log tool execution errors with context for debugging
+            Logger::error("Tool execution failed: {$toolCall->name}", [
+                'tool_call_id' => $toolCall->id,
+                'exception_type' => get_class($e),
+                'message' => $e->getMessage(),
+                'arguments' => $toolCall->arguments,
+            ]);
+
+            return [
+                'error' => $e->getMessage(),
+                'error_type' => (new \ReflectionClass($e))->getShortName(),
+            ];
         }
     }
 

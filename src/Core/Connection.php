@@ -8,11 +8,13 @@ use Generator;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\ServerException;
 use GuzzleHttp\Psr7\Request;
 use PHPLLM\Exceptions\ApiException;
 use PHPLLM\Exceptions\AuthenticationException;
 use PHPLLM\Exceptions\RateLimitException;
+use PHPLLM\Exceptions\StreamException;
 use Psr\Http\Message\ResponseInterface;
 
 /**
@@ -37,6 +39,8 @@ final class Connection
      *
      * @param array<string, string> $headers
      * @return array<string, mixed>
+     *
+     * @throws ApiException If response is not valid JSON
      */
     public function get(string $url, array $headers = []): array
     {
@@ -46,7 +50,7 @@ final class Connection
 
         $response = $this->request('GET', $url, $headers);
         $content = $response->getBody()->getContents();
-        $decoded = json_decode($content, true) ?? [];
+        $decoded = $this->decodeJson($content, $url);
 
         $duration = microtime(true) - $startTime;
         Logger::logResponse($response->getStatusCode(), $decoded, $duration);
@@ -60,6 +64,8 @@ final class Connection
      * @param array<string, string> $headers
      * @param array<string, mixed> $body
      * @return array<string, mixed>
+     *
+     * @throws ApiException If response is not valid JSON
      */
     public function post(string $url, array $headers, array $body): array
     {
@@ -69,7 +75,7 @@ final class Connection
 
         $response = $this->request('POST', $url, $headers, $body);
         $content = $response->getBody()->getContents();
-        $decoded = json_decode($content, true) ?? [];
+        $decoded = $this->decodeJson($content, $url);
 
         $duration = microtime(true) - $startTime;
         Logger::logResponse($response->getStatusCode(), $decoded, $duration);
@@ -83,6 +89,8 @@ final class Connection
      * @param array<string, string> $headers
      * @param array<string, mixed> $body
      * @return Generator<string>
+     *
+     * @throws StreamException If stream fails or disconnects unexpectedly
      */
     public function stream(string $url, array $headers, array $body): Generator
     {
@@ -95,25 +103,54 @@ final class Connection
             json_encode($body),
         );
 
-        $response = $this->client->send($request, [
-            'stream' => true,
-            'timeout' => $this->config->getRequestTimeout(),
-        ]);
+        try {
+            $response = $this->client->send($request, [
+                'stream' => true,
+                'timeout' => $this->config->getRequestTimeout(),
+            ]);
+        } catch (GuzzleException $e) {
+            Logger::error("Stream connection failed: {$e->getMessage()}", ['url' => $url]);
+            throw new StreamException(
+                "Failed to establish stream connection: {$e->getMessage()}",
+                0,
+                $e,
+            );
+        }
 
         $stream = $response->getBody();
         $buffer = '';
 
-        while (!$stream->eof()) {
-            $chunk = $stream->read(1024);
-            $buffer .= $chunk;
+        try {
+            while (!$stream->eof()) {
+                $chunk = $stream->read(1024);
 
-            // Process complete SSE events
-            while (($pos = strpos($buffer, "\n\n")) !== false) {
-                $event = substr($buffer, 0, $pos);
-                $buffer = substr($buffer, $pos + 2);
+                // Empty read may happen, just continue
+                if ($chunk === '') {
+                    continue;
+                }
 
-                // Parse SSE data lines
-                foreach (explode("\n", $event) as $line) {
+                $buffer .= $chunk;
+
+                // Process complete SSE events
+                while (($pos = strpos($buffer, "\n\n")) !== false) {
+                    $event = substr($buffer, 0, $pos);
+                    $buffer = substr($buffer, $pos + 2);
+
+                    // Parse SSE data lines
+                    foreach (explode("\n", $event) as $line) {
+                        if (str_starts_with($line, 'data: ')) {
+                            $data = substr($line, 6);
+                            if ($data !== '[DONE]') {
+                                yield $data;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Handle any remaining data in buffer
+            if ($buffer !== '') {
+                foreach (explode("\n", $buffer) as $line) {
                     if (str_starts_with($line, 'data: ')) {
                         $data = substr($line, 6);
                         if ($data !== '[DONE]') {
@@ -122,18 +159,16 @@ final class Connection
                     }
                 }
             }
-        }
-
-        // Handle any remaining data
-        if ($buffer !== '') {
-            foreach (explode("\n", $buffer) as $line) {
-                if (str_starts_with($line, 'data: ')) {
-                    $data = substr($line, 6);
-                    if ($data !== '[DONE]') {
-                        yield $data;
-                    }
-                }
-            }
+        } catch (\RuntimeException $e) {
+            Logger::error("Stream read error: {$e->getMessage()}", [
+                'url' => $url,
+                'buffer_length' => strlen($buffer),
+            ]);
+            throw new StreamException(
+                "Stream disconnected unexpectedly: {$e->getMessage()}",
+                0,
+                $e,
+            );
         }
     }
 
@@ -185,8 +220,7 @@ final class Connection
                         $e,
                     );
                 }
-                // Exponential backoff
-                usleep((int) (pow(2, $attempts) * 100000));
+                $this->backoff($attempts);
             } catch (ConnectException $e) {
                 $attempts++;
                 Logger::warning("Connection error (attempt {$attempts}/{$maxRetries}): {$e->getMessage()}", [
@@ -202,9 +236,53 @@ final class Connection
                         $e,
                     );
                 }
-                usleep((int) (pow(2, $attempts) * 100000));
+                $this->backoff($attempts);
             }
         }
+    }
+
+    /**
+     * Perform exponential backoff with a cap.
+     *
+     * @param int $attempts Current attempt number
+     */
+    private function backoff(int $attempts): void
+    {
+        // Cap at 30 seconds (300000000 microseconds) to prevent overflow
+        $delay = min(pow(2, $attempts) * 100000, 30000000);
+        usleep((int) $delay);
+    }
+
+    /**
+     * Decode JSON response with error handling.
+     *
+     * @return array<string, mixed>
+     *
+     * @throws ApiException If JSON is invalid
+     */
+    private function decodeJson(string $content, string $url): array
+    {
+        if ($content === '') {
+            return [];
+        }
+
+        $decoded = json_decode($content, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Logger::error('Invalid JSON response', [
+                'url' => $url,
+                'error' => json_last_error_msg(),
+                'content_preview' => substr($content, 0, 200),
+            ]);
+            throw new ApiException(
+                'Invalid JSON response from API: ' . json_last_error_msg(),
+                0,
+                null,
+                ['raw_content' => substr($content, 0, 1000)],
+            );
+        }
+
+        return $decoded ?? [];
     }
 
     /**

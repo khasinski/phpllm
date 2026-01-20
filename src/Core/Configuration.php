@@ -187,12 +187,24 @@ final class Configuration
 
     public function setRequestTimeout(int $timeout): self
     {
+        if ($timeout < 1) {
+            throw new \InvalidArgumentException('Request timeout must be at least 1 second');
+        }
+        if ($timeout > 600) {
+            throw new \InvalidArgumentException('Request timeout cannot exceed 600 seconds');
+        }
         $this->requestTimeout = $timeout;
         return $this;
     }
 
     public function setMaxRetries(int $retries): self
     {
+        if ($retries < 0) {
+            throw new \InvalidArgumentException('Max retries cannot be negative');
+        }
+        if ($retries > 10) {
+            throw new \InvalidArgumentException('Max retries cannot exceed 10');
+        }
         $this->maxRetries = $retries;
         return $this;
     }
@@ -231,12 +243,18 @@ final class Configuration
 
     public function setDefaultTemperature(?float $temperature): self
     {
+        if ($temperature !== null && ($temperature < 0.0 || $temperature > 2.0)) {
+            throw new \InvalidArgumentException('Temperature must be between 0.0 and 2.0');
+        }
         $this->defaultTemperature = $temperature;
         return $this;
     }
 
     public function setDefaultMaxTokens(?int $maxTokens): self
     {
+        if ($maxTokens !== null && $maxTokens < 1) {
+            throw new \InvalidArgumentException('Max tokens must be at least 1');
+        }
         $this->defaultMaxTokens = $maxTokens;
         return $this;
     }

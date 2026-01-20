@@ -190,7 +190,8 @@ final class Attachment
         }
 
         if ($this->base64Content !== null) {
-            return base64_decode($this->base64Content);
+            $decoded = base64_decode($this->base64Content, true);
+            return $decoded !== false ? $decoded : null;
         }
 
         return null;

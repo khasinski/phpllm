@@ -51,7 +51,10 @@ final class Image
     public function save(string $path): bool
     {
         if ($this->base64 !== null) {
-            $data = base64_decode($this->base64);
+            $data = base64_decode($this->base64, true);
+            if ($data === false) {
+                return false;
+            }
             return file_put_contents($path, $data) !== false;
         }
 
@@ -72,7 +75,8 @@ final class Image
     public function getBytes(): ?string
     {
         if ($this->base64 !== null) {
-            return base64_decode($this->base64);
+            $decoded = base64_decode($this->base64, true);
+            return $decoded !== false ? $decoded : null;
         }
 
         if ($this->url !== null) {
