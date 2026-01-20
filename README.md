@@ -17,7 +17,7 @@ Inspired by [RubyLLM](https://rubyllm.com/), PHPLLM provides a unified, elegant 
 - 📡 **Streaming** - Real-time response streaming
 - 🧮 **Embeddings** - Generate and compare text embeddings
 - 🎨 **Image Generation** - Create images with GPT Image 1.5
-- ⚡ **Laravel Ready** - First-class Laravel integration
+- ⚡ **Framework Ready** - Laravel & Symfony integration
 
 ## Installation
 
@@ -183,9 +183,13 @@ $images = PHPLLM::paintMany('A dog', count: 3);
 $image = PHPLLM::paint('A cat', model: 'dall-e-3');
 ```
 
-## Laravel Integration
+## Framework Integration
 
-### Installation
+### Laravel
+
+See detailed Laravel examples below. For **Symfony**, see [SYMFONY.md](SYMFONY.md).
+
+### Laravel Installation
 
 ```bash
 composer require phpllm/phpllm
