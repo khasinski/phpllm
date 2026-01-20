@@ -145,7 +145,7 @@ trait ActsAsChat
             'tokens_input' => $message->tokens?->input,
             'tokens_output' => $message->tokens?->output,
             'tool_calls' => $message->hasToolCalls()
-                ? json_encode(array_map(fn($tc) => $tc->toArray(), $message->toolCalls))
+                ? json_encode(array_map(fn ($tc) => $tc->toArray(), $message->toolCalls))
                 : null,
             'tool_call_id' => $message->toolCallId,
         ]);

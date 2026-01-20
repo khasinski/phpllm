@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace PHPLLM\Tests;
 
-use PHPUnit\Framework\TestCase as BaseTestCase;
 use PHPLLM\PHPLLM;
+use PHPUnit\Framework\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {

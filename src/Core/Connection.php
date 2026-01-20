@@ -70,7 +70,7 @@ final class Connection
             'POST',
             $url,
             array_merge($headers, ['Content-Type' => 'application/json']),
-            json_encode($body)
+            json_encode($body),
         );
 
         $response = $this->client->send($request, [
@@ -125,7 +125,7 @@ final class Connection
         string $method,
         string $url,
         array $headers,
-        ?array $body = null
+        ?array $body = null,
     ): ResponseInterface {
         $attempts = 0;
         $maxRetries = $this->config->getMaxRetries();
@@ -154,13 +154,13 @@ final class Connection
                     'url' => $url,
                 ]);
                 if ($attempts >= $maxRetries) {
-                    Logger::error("Max retries exceeded for server error", ['url' => $url]);
+                    Logger::error('Max retries exceeded for server error', ['url' => $url]);
                     throw new ApiException(
                         "Server error after {$maxRetries} retries: " . $e->getMessage(),
                         $e->getCode(),
                         null,
                         null,
-                        $e
+                        $e,
                     );
                 }
                 // Exponential backoff
@@ -171,13 +171,13 @@ final class Connection
                     'url' => $url,
                 ]);
                 if ($attempts >= $maxRetries) {
-                    Logger::error("Max retries exceeded for connection error", ['url' => $url]);
+                    Logger::error('Max retries exceeded for connection error', ['url' => $url]);
                     throw new ApiException(
                         "Connection failed after {$maxRetries} retries: " . $e->getMessage(),
                         0,
                         null,
                         null,
-                        $e
+                        $e,
                     );
                 }
                 usleep((int) (pow(2, $attempts) * 100000));
@@ -202,7 +202,7 @@ final class Connection
                 null,
                 $body,
                 (int) ($response->getHeaderLine('Retry-After') ?: null),
-                $e
+                $e,
             ),
             default => throw new ApiException($message, $statusCode, null, $body, $e),
         };

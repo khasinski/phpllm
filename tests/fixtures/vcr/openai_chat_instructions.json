@@ -1,0 +1,106 @@
+[
+    {
+        "request": {
+            "method": "POST",
+            "url": "https://api.openai.com/v1/chat/completions",
+            "headers": {
+                "Host": "api.openai.com",
+                "Expect": "",
+                "Accept-Encoding": "",
+                "User-Agent": "GuzzleHttp/7",
+                "Authorization": [
+                    "[FILTERED]"
+                ],
+                "Content-Type": "application/json",
+                "Accept": ""
+            },
+            "body": "{\"model\":\"gpt-4o-mini\",\"messages\":[{\"role\":\"system\",\"content\":\"Always respond in exactly 3 words.\"},{\"role\":\"user\",\"content\":\"How are you?\"}],\"temperature\":0}"
+        },
+        "response": {
+            "status": {
+                "code": 200,
+                "message": "OK"
+            },
+            "headers": {
+                "Date": "Tue, 20 Jan 2026 21:27:18 GMT",
+                "Content-Type": "application/json",
+                "Transfer-Encoding": "chunked",
+                "Connection": "keep-alive",
+                "access-control-expose-headers": "X-Request-ID",
+                "openai-organization": "user-h7m2t30jnyqzec1thkvt5rcd",
+                "openai-processing-ms": "329",
+                "openai-project": "proj_yBBvayevSgRR3SVjSmBgm0so",
+                "openai-version": "2020-10-01",
+                "x-envoy-upstream-service-time": "346",
+                "x-ratelimit-limit-requests": "5000",
+                "x-ratelimit-limit-tokens": "4000000",
+                "x-ratelimit-remaining-requests": "4999",
+                "x-ratelimit-remaining-tokens": "3999985",
+                "x-ratelimit-reset-requests": "12ms",
+                "x-ratelimit-reset-tokens": "0s",
+                "x-request-id": "req_e56ae9ef41e04df68fff8e8d23806df4",
+                "x-openai-proxy-wasm": "v0.1",
+                "cf-cache-status": "DYNAMIC",
+                "Set-Cookie": [
+                    "__cf_bm=nMREBO5Cbbh6jJFW2OOaw4Ybnm_9reyPHS4qNMeRz24-1768944438-1.0.1.1-Kv5V17BkS3elOretsrd6yglUdNlbGc9UDageeZ4euZO7gNfgeOohFjI8KTYOW9EZXjmSSdvy4boiRHJVJwy35sCjfgnrDMUNlQNCyXtqwi0; path=/; expires=Tue, 20-Jan-26 21:57:18 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None",
+                    "_cfuvid=432SAkLu0FIq.MY_Nj6r2o4sNK8lmcKq2.I_9MRKzo0-1768944438944-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None"
+                ],
+                "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+                "X-Content-Type-Options": "nosniff",
+                "Server": "cloudflare",
+                "CF-RAY": "9c11a7b47d77265d-WAW",
+                "alt-svc": "h3=\":443\"; ma=86400"
+            },
+            "body": "{\n  \"id\": \"chatcmpl-D0DXq90b8p1aMl8O6uwtLjBaZIM3w\",\n  \"object\": \"chat.completion\",\n  \"created\": 1768944438,\n  \"model\": \"gpt-4o-mini-2024-07-18\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"I'm doing well.\",\n        \"refusal\": null,\n        \"annotations\": []\n      },\n      \"logprobs\": null,\n      \"finish_reason\": \"stop\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 23,\n    \"completion_tokens\": 4,\n    \"total_tokens\": 27,\n    \"prompt_tokens_details\": {\n      \"cached_tokens\": 0,\n      \"audio_tokens\": 0\n    },\n    \"completion_tokens_details\": {\n      \"reasoning_tokens\": 0,\n      \"audio_tokens\": 0,\n      \"accepted_prediction_tokens\": 0,\n      \"rejected_prediction_tokens\": 0\n    }\n  },\n  \"service_tier\": \"default\",\n  \"system_fingerprint\": \"fp_c4585b5b9c\"\n}\n",
+            "curl_info": {
+                "url": "https://api.openai.com/v1/chat/completions",
+                "content_type": "application/json",
+                "http_code": 200,
+                "header_size": 1332,
+                "request_size": 485,
+                "filetime": -1,
+                "ssl_verify_result": 0,
+                "redirect_count": 0,
+                "total_time": 0.508751,
+                "namelookup_time": 0.001898,
+                "connect_time": 0.010083,
+                "pretransfer_time": 0.021871,
+                "size_upload": 158,
+                "size_download": 821,
+                "speed_download": 1613,
+                "speed_upload": 310,
+                "download_content_length": -1,
+                "upload_content_length": 158,
+                "starttransfer_time": 0.501484,
+                "redirect_time": 0,
+                "redirect_url": "",
+                "primary_ip": "162.159.140.245",
+                "certinfo": [],
+                "primary_port": 443,
+                "local_ip": "192.168.0.66",
+                "local_port": 53132,
+                "http_version": 2,
+                "protocol": 2,
+                "ssl_verifyresult": 0,
+                "scheme": "https",
+                "appconnect_time_us": 21823,
+                "queue_time_us": 97,
+                "connect_time_us": 10083,
+                "namelookup_time_us": 1898,
+                "pretransfer_time_us": 21871,
+                "redirect_time_us": 0,
+                "starttransfer_time_us": 501484,
+                "posttransfer_time_us": 21870,
+                "total_time_us": 508751,
+                "effective_method": "POST",
+                "capath": "",
+                "cainfo": "",
+                "used_proxy": 0,
+                "httpauth_used": 0,
+                "proxyauth_used": 0,
+                "conn_id": 0
+            }
+        },
+        "index": 0
+    }
+]

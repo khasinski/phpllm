@@ -28,7 +28,7 @@ final class Embedding
     {
         if ($this->dimensions !== $other->dimensions) {
             throw new \InvalidArgumentException(
-                "Dimension mismatch: {$this->dimensions} vs {$other->dimensions}"
+                "Dimension mismatch: {$this->dimensions} vs {$other->dimensions}",
             );
         }
 
@@ -58,7 +58,7 @@ final class Embedding
     {
         if ($this->dimensions !== $other->dimensions) {
             throw new \InvalidArgumentException(
-                "Dimension mismatch: {$this->dimensions} vs {$other->dimensions}"
+                "Dimension mismatch: {$this->dimensions} vs {$other->dimensions}",
             );
         }
 

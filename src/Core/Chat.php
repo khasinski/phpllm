@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace PHPLLM\Core;
 
-use Generator;
 use PHPLLM\Contracts\ProviderInterface;
 use PHPLLM\Contracts\ToolInterface;
 
@@ -325,8 +324,8 @@ final class Chat
 
         if (!empty($this->tools)) {
             $options['tools'] = array_map(
-                fn(ToolInterface $tool) => $tool->toFunctionSchema(),
-                array_values($this->tools)
+                fn (ToolInterface $tool) => $tool->toFunctionSchema(),
+                array_values($this->tools),
             );
         }
 

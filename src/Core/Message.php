@@ -141,7 +141,7 @@ final class Message
         }
 
         if ($this->hasToolCalls()) {
-            $data['tool_calls'] = array_map(fn(ToolCall $tc) => $tc->toArray(), $this->toolCalls);
+            $data['tool_calls'] = array_map(fn (ToolCall $tc) => $tc->toArray(), $this->toolCalls);
         }
 
         return $data;

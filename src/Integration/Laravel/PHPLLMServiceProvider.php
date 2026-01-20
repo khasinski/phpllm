@@ -24,7 +24,7 @@ class PHPLLMServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton('phpllm', function () {
-            return new class {
+            return new class () {
                 public function chat(?string $model = null, ?string $provider = null)
                 {
                     return PHPLLM::chat($model, $provider);

@@ -14,7 +14,7 @@ class RateLimitException extends ApiException
         ?string $provider = null,
         ?array $response = null,
         protected ?int $retryAfter = null,
-        ?\Throwable $previous = null
+        ?\Throwable $previous = null,
     ) {
         parent::__construct($message, 429, $provider, $response, $previous);
     }

@@ -62,7 +62,7 @@ final class Content
      */
     public function getImages(): array
     {
-        return array_filter($this->attachments, fn(Attachment $a) => $a->isImage());
+        return array_filter($this->attachments, fn (Attachment $a) => $a->isImage());
     }
 
     /**
@@ -72,7 +72,7 @@ final class Content
      */
     public function getPdfs(): array
     {
-        return array_filter($this->attachments, fn(Attachment $a) => $a->isPdf());
+        return array_filter($this->attachments, fn (Attachment $a) => $a->isPdf());
     }
 
     /**
@@ -98,8 +98,8 @@ final class Content
         }
 
         return array_map(
-            fn($item) => $item instanceof Attachment ? $item : self::attachmentFromString($item),
-            $with
+            fn ($item) => $item instanceof Attachment ? $item : self::attachmentFromString($item),
+            $with,
         );
     }
 

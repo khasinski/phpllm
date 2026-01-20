@@ -91,7 +91,7 @@ class OpenAITest extends VCRTestCase
         $this->assertTrue(
             str_contains($text, 'sunny') ||
             str_contains($text, '22') ||
-            str_contains($text, 'weather')
+            str_contains($text, 'weather'),
         );
     }
 
@@ -134,8 +134,16 @@ class OpenAITest extends VCRTestCase
         $this->assertGreaterThan($sim2, $sim1);
     }
 
+    /**
+     * @group skip-vcr
+     */
     public function testStreaming(): void
     {
+        // VCR doesn't handle streaming responses well, skip when using cassettes
+        if (static::$vcrEnabled && !getenv('OPENAI_API_KEY')) {
+            $this->markTestSkipped('Streaming tests require live API (VCR incompatible)');
+        }
+
         $this->useCassette('openai_streaming');
 
         $chunks = [];
@@ -145,7 +153,7 @@ class OpenAITest extends VCRTestCase
             'Count from 1 to 3.',
             stream: function ($chunk) use (&$chunks) {
                 $chunks[] = $chunk;
-            }
+            },
         );
 
         $this->assertNotEmpty($chunks);

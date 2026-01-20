@@ -49,5 +49,12 @@
     "prefer-stable": true,
     "config": {
         "sort-packages": true
+    },
+    "scripts": {
+        "test": "phpunit",
+        "analyse": "phpstan analyse --no-progress",
+        "cs-check": "php-cs-fixer fix --dry-run --diff",
+        "cs-fix": "php-cs-fixer fix",
+        "scrub-cassettes": "php scripts/scrub-cassettes.php"
     }
 }

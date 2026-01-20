@@ -41,7 +41,7 @@ class AnthropicTest extends VCRTestCase
             str_contains($text, 'ahoy') ||
             str_contains($text, 'arr') ||
             str_contains($text, 'matey') ||
-            str_contains($text, 'ye')
+            str_contains($text, 'ye'),
         );
     }
 

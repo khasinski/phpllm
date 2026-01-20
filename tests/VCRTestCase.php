@@ -13,6 +13,7 @@ use VCR\VCR;
  * 1. Set API keys in environment
  * 2. Delete the cassette file
  * 3. Run the test
+ * 4. Run `composer scrub-cassettes` to remove API keys
  *
  * The cassette will be recorded and subsequent runs will replay it.
  */

@@ -135,8 +135,8 @@ final class PHPLLM
     {
         $config = Configuration::getInstance();
 
-        $model = $model ?? $config->getDefaultModel();
-        $provider = $provider ?? self::detectProvider($model);
+        $model ??= $config->getDefaultModel();
+        $provider ??= self::detectProvider($model);
 
         $providerInstance = self::getProvider($provider);
 
@@ -154,9 +154,9 @@ final class PHPLLM
     public static function embed(
         string|array $input,
         ?string $model = null,
-        array $options = []
+        array $options = [],
     ): Embedding|array {
-        $model = $model ?? 'text-embedding-3-small';
+        $model ??= 'text-embedding-3-small';
         $provider = self::detectProvider($model);
         $providerInstance = self::getProvider($provider);
 
@@ -178,9 +178,9 @@ final class PHPLLM
     public static function paint(
         string $prompt,
         ?string $model = null,
-        array $options = []
+        array $options = [],
     ): Image {
-        $model = $model ?? 'gpt-image-1.5';
+        $model ??= 'gpt-image-1.5';
         $provider = self::detectProvider($model);
         $providerInstance = self::getProvider($provider);
 
@@ -205,9 +205,9 @@ final class PHPLLM
         string $prompt,
         int $count = 2,
         ?string $model = null,
-        array $options = []
+        array $options = [],
     ): array {
-        $model = $model ?? 'gpt-image-1.5';
+        $model ??= 'gpt-image-1.5';
         $provider = self::detectProvider($model);
         $providerInstance = self::getProvider($provider);
 

@@ -14,7 +14,7 @@ class AuthenticationException extends ApiException
         int $statusCode = 401,
         ?string $provider = null,
         ?array $response = null,
-        ?\Throwable $previous = null
+        ?\Throwable $previous = null,
     ) {
         parent::__construct($message, $statusCode, $provider, $response, $previous);
     }

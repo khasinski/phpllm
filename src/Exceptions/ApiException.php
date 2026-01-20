@@ -14,7 +14,7 @@ class ApiException extends PHPLLMException
         protected int $statusCode = 0,
         protected ?string $provider = null,
         protected ?array $response = null,
-        ?\Throwable $previous = null
+        ?\Throwable $previous = null,
     ) {
         parent::__construct($message, $statusCode, $previous);
     }

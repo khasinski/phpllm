@@ -25,7 +25,7 @@ use PHPLLM\Providers\BaseProvider;
 class OpenAIProvider extends BaseProvider implements EmbeddingInterface, ImageGenerationInterface
 {
     protected array $capabilities = [
-        'chat', 'vision', 'tools', 'streaming', 'json_mode', 'embeddings', 'images'
+        'chat', 'vision', 'tools', 'streaming', 'json_mode', 'embeddings', 'images',
     ];
 
     public function getSlug(): string
