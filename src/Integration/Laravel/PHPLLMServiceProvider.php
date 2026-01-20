@@ -6,6 +6,8 @@ namespace PHPLLM\Integration\Laravel;
 
 use Illuminate\Support\ServiceProvider;
 use PHPLLM\Core\Configuration;
+use PHPLLM\Integration\Laravel\Console\MakeToolCommand;
+use PHPLLM\Integration\Laravel\Console\VerifyCommand;
 use PHPLLM\PHPLLM;
 
 /**
@@ -45,9 +47,23 @@ class PHPLLMServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Publish config
         $this->publishes([
             __DIR__ . '/config/phpllm.php' => config_path('phpllm.php'),
         ], 'phpllm-config');
+
+        // Publish migrations
+        $this->publishes([
+            __DIR__ . '/database/migrations' => database_path('migrations'),
+        ], 'phpllm-migrations');
+
+        // Register commands
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                VerifyCommand::class,
+                MakeToolCommand::class,
+            ]);
+        }
 
         // Configure PHPLLM from Laravel config
         $config = config('phpllm', []);

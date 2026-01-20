@@ -6,8 +6,10 @@ namespace PHPLLM\Integration\Laravel\Eloquent;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use PHPLLM\Core\Chat;
 use PHPLLM\Core\Message;
+use PHPLLM\Exceptions\ApiException;
 use PHPLLM\PHPLLM;
 
 /**
@@ -21,7 +23,28 @@ use PHPLLM\PHPLLM;
  *
  *     protected string $messagesRelation = 'messages';
  *     protected string $modelColumn = 'ai_model';
+ *
+ *     public function messages(): HasMany
+ *     {
+ *         return $this->hasMany(Message::class);
+ *     }
  * }
+ * ```
+ *
+ * Required migration for messages table:
+ * ```php
+ * Schema::create('messages', function (Blueprint $table) {
+ *     $table->id();
+ *     $table->foreignId('conversation_id')->constrained()->cascadeOnDelete();
+ *     $table->string('role'); // system, user, assistant, tool
+ *     $table->longText('content');
+ *     $table->string('model')->nullable();
+ *     $table->unsignedInteger('tokens_input')->nullable();
+ *     $table->unsignedInteger('tokens_output')->nullable();
+ *     $table->json('tool_calls')->nullable();
+ *     $table->string('tool_call_id')->nullable();
+ *     $table->timestamps();
+ * });
  * ```
  */
 trait ActsAsChat
@@ -29,11 +52,17 @@ trait ActsAsChat
     protected ?Chat $chatInstance = null;
 
     /**
-     * Boot the trait.
+     * Boot the trait - auto-delete messages when conversation is deleted.
      */
     public static function bootActsAsChat(): void
     {
-        // Auto-save messages after asking
+        static::deleting(function (Model $model): void {
+            /** @var Model&ActsAsChat $model */
+            $relation = $model->getMessagesRelation();
+            if (method_exists($model, $relation)) {
+                $model->{$relation}()->delete();
+            }
+        });
     }
 
     /**
@@ -73,16 +102,21 @@ trait ActsAsChat
      *
      * @param string|array|null $with Attachments
      * @param callable|null $stream Streaming callback
+     *
+     * @throws ApiException
      */
     public function ask(string $message, string|array|null $with = null, ?callable $stream = null): Message
     {
+        $userMessage = Message::user($message, $with);
+
+        // Get response from AI
         $response = $this->chat()->ask($message, $with, $stream);
 
-        // Persist the user message
-        $this->persistMessage(Message::user($message, $with));
-
-        // Persist the assistant response
-        $this->persistMessage($response);
+        // Persist both messages in a transaction
+        DB::transaction(function () use ($userMessage, $response): void {
+            $this->persistMessage($userMessage);
+            $this->persistMessage($response);
+        });
 
         return $response;
     }

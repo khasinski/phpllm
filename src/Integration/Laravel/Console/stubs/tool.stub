@@ -1,0 +1,33 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use PHPLLM\Core\Tool;
+
+class {{ class }} extends Tool
+{
+    protected string $name = '{{ name }}';
+
+    protected string $description = 'Description of what this tool does';
+
+    protected function parameters(): array
+    {
+        return [
+            'param1' => [
+                'type' => 'string',
+                'description' => 'Description of param1',
+                'required' => true,
+            ],
+        ];
+    }
+
+    public function execute(array $arguments): mixed
+    {
+        // Implement your tool logic here
+        return [
+            'result' => 'success',
+        ];
+    }
+}

@@ -1,0 +1,31 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class () extends Migration {
+    public function up(): void
+    {
+        Schema::create('conversation_messages', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('conversation_id')->constrained()->cascadeOnDelete();
+            $table->string('role'); // system, user, assistant, tool
+            $table->longText('content');
+            $table->string('model')->nullable();
+            $table->unsignedInteger('tokens_input')->nullable();
+            $table->unsignedInteger('tokens_output')->nullable();
+            $table->json('tool_calls')->nullable();
+            $table->string('tool_call_id')->nullable();
+            $table->timestamps();
+
+            $table->index('conversation_id');
+            $table->index('role');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('conversation_messages');
+    }
+};
