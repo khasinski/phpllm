@@ -48,7 +48,19 @@ final class PHPLLM
 
     /** @var array<string, string> Model to provider mapping */
     private static array $modelProviders = [
-        // OpenAI GPT-4.1 Series (2025)
+        // OpenAI GPT-5.2 Series (Latest - December 2025)
+        'gpt-5.2' => 'openai',
+        'gpt-5.2-pro' => 'openai',
+        'gpt-5.2-chat-latest' => 'openai',
+        'gpt-5.2-codex' => 'openai',
+
+        // OpenAI GPT-5.1 Series
+        'gpt-5.1' => 'openai',
+
+        // OpenAI GPT-5 (Original)
+        'gpt-5' => 'openai',
+
+        // OpenAI GPT-4.1 Series
         'gpt-4.1' => 'openai',
         'gpt-4.1-mini' => 'openai',
         'gpt-4.1-nano' => 'openai',
@@ -58,15 +70,11 @@ final class PHPLLM
         'o3-mini' => 'openai',
         'o3-pro' => 'openai',
         'o4-mini' => 'openai',
-        'o1' => 'openai',
-        'o1-mini' => 'openai',
-        'o1-preview' => 'openai',
 
-        // OpenAI GPT-4o Series
+        // OpenAI GPT-4o Series (Legacy)
         'gpt-4o' => 'openai',
         'gpt-4o-mini' => 'openai',
         'gpt-4o-audio-preview' => 'openai',
-        'gpt-4-turbo' => 'openai',
 
         // OpenAI Embeddings
         'text-embedding-3-small' => 'openai',

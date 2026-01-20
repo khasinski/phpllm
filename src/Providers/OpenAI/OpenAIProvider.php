@@ -319,7 +319,19 @@ class OpenAIProvider extends BaseProvider implements EmbeddingInterface, ImageGe
     public function listModels(): array
     {
         return [
-            // GPT-4.1 Series (2025) - 1M context, improved coding
+            // GPT-5.2 Series (Latest - December 2025)
+            'gpt-5.2' => ['context' => 200000, 'vision' => true, 'tools' => true, 'reasoning' => true],
+            'gpt-5.2-pro' => ['context' => 200000, 'vision' => true, 'tools' => true, 'reasoning' => true],
+            'gpt-5.2-chat-latest' => ['context' => 200000, 'vision' => true, 'tools' => true],
+            'gpt-5.2-codex' => ['context' => 200000, 'vision' => true, 'tools' => true, 'reasoning' => true, 'coding' => true],
+
+            // GPT-5.1 Series
+            'gpt-5.1' => ['context' => 200000, 'vision' => true, 'tools' => true, 'reasoning' => true],
+
+            // GPT-5 (Original)
+            'gpt-5' => ['context' => 200000, 'vision' => true, 'tools' => true, 'reasoning' => true],
+
+            // GPT-4.1 Series - 1M context, improved coding
             'gpt-4.1' => ['context' => 1000000, 'vision' => true, 'tools' => true],
             'gpt-4.1-mini' => ['context' => 1000000, 'vision' => true, 'tools' => true],
             'gpt-4.1-nano' => ['context' => 1000000, 'vision' => true, 'tools' => true],
@@ -329,14 +341,11 @@ class OpenAIProvider extends BaseProvider implements EmbeddingInterface, ImageGe
             'o3-pro' => ['context' => 200000, 'vision' => true, 'tools' => true, 'reasoning' => true],
             'o3-mini' => ['context' => 200000, 'vision' => true, 'tools' => true, 'reasoning' => true],
             'o4-mini' => ['context' => 200000, 'vision' => true, 'tools' => true, 'reasoning' => true],
-            'o1' => ['context' => 200000, 'vision' => true, 'tools' => false, 'reasoning' => true],
-            'o1-mini' => ['context' => 128000, 'vision' => false, 'tools' => false, 'reasoning' => true],
 
-            // GPT-4o Series
-            'gpt-4o' => ['context' => 128000, 'vision' => true, 'tools' => true],
-            'gpt-4o-mini' => ['context' => 128000, 'vision' => true, 'tools' => true],
+            // GPT-4o Series (Legacy)
+            'gpt-4o' => ['context' => 128000, 'vision' => true, 'tools' => true, 'legacy' => true],
+            'gpt-4o-mini' => ['context' => 128000, 'vision' => true, 'tools' => true, 'legacy' => true],
             'gpt-4o-audio-preview' => ['context' => 128000, 'vision' => true, 'tools' => true, 'audio' => true],
-            'gpt-4-turbo' => ['context' => 128000, 'vision' => true, 'tools' => true],
 
             // Embeddings
             'text-embedding-3-small' => ['dimensions' => 1536, 'type' => 'embedding'],

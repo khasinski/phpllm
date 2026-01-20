@@ -51,8 +51,8 @@ echo $response->getText();
 $chat = PHPLLM::chat();
 
 // Specific model
-$chat = PHPLLM::chat('gpt-4.1');           // OpenAI GPT-4.1 (1M context)
-$chat = PHPLLM::chat('o3-mini');           // OpenAI reasoning model
+$chat = PHPLLM::chat('gpt-5.2');           // OpenAI GPT-5.2 (latest)
+$chat = PHPLLM::chat('gpt-5.2-codex');     // Optimized for coding
 $chat = PHPLLM::chat('claude-sonnet-4-5-20250929'); // Latest Claude
 
 // With configuration
