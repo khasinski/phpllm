@@ -48,16 +48,25 @@ final class PHPLLM
 
     /** @var array<string, string> Model to provider mapping */
     private static array $modelProviders = [
-        // OpenAI Chat
-        'gpt-4o' => 'openai',
-        'gpt-4o-mini' => 'openai',
-        'gpt-4-turbo' => 'openai',
-        'gpt-4' => 'openai',
-        'gpt-3.5-turbo' => 'openai',
+        // OpenAI GPT-4.1 Series (2025)
+        'gpt-4.1' => 'openai',
+        'gpt-4.1-mini' => 'openai',
+        'gpt-4.1-nano' => 'openai',
+
+        // OpenAI Reasoning Models (o-series)
+        'o3' => 'openai',
+        'o3-mini' => 'openai',
+        'o3-pro' => 'openai',
+        'o4-mini' => 'openai',
         'o1' => 'openai',
         'o1-mini' => 'openai',
         'o1-preview' => 'openai',
-        'o3-mini' => 'openai',
+
+        // OpenAI GPT-4o Series
+        'gpt-4o' => 'openai',
+        'gpt-4o-mini' => 'openai',
+        'gpt-4o-audio-preview' => 'openai',
+        'gpt-4-turbo' => 'openai',
 
         // OpenAI Embeddings
         'text-embedding-3-small' => 'openai',
@@ -69,15 +78,23 @@ final class PHPLLM
         'dall-e-3' => 'openai',
         'dall-e-2' => 'openai',
 
-        // Anthropic
-        'claude-sonnet-4-20250514' => 'anthropic',
+        // Anthropic Claude 4.5 (Latest)
+        'claude-opus-4-5-20251101' => 'anthropic',
+        'claude-sonnet-4-5-20250929' => 'anthropic',
+        'claude-haiku-4-5-20251101' => 'anthropic',
+
+        // Anthropic Claude 4
         'claude-opus-4-20250514' => 'anthropic',
+        'claude-sonnet-4-20250514' => 'anthropic',
+
+        // Anthropic Claude 3.5 (Legacy)
         'claude-3-5-sonnet-20241022' => 'anthropic',
         'claude-3-5-haiku-20241022' => 'anthropic',
         'claude-3-opus-20240229' => 'anthropic',
 
         // Gemini
         'gemini-2.0-flash' => 'gemini',
+        'gemini-2.0-pro' => 'gemini',
         'gemini-1.5-pro' => 'gemini',
         'gemini-1.5-flash' => 'gemini',
     ];
@@ -236,8 +253,8 @@ final class PHPLLM
             return self::$modelProviders[$model];
         }
 
-        // Check prefix patterns
-        if (str_starts_with($model, 'gpt-') || str_starts_with($model, 'o1') || str_starts_with($model, 'o3')) {
+        // Check prefix patterns for OpenAI
+        if (str_starts_with($model, 'gpt-') || preg_match('/^o[1-4]/', $model)) {
             return 'openai';
         }
 

@@ -347,8 +347,16 @@ class AnthropicProvider extends BaseProvider
     public function listModels(): array
     {
         return [
-            'claude-sonnet-4-20250514' => ['context' => 200000, 'vision' => true, 'tools' => true, 'thinking' => true],
+            // Claude 4.5 Series (Latest - 2025)
+            'claude-opus-4-5-20251101' => ['context' => 200000, 'vision' => true, 'tools' => true, 'thinking' => true, 'computer_use' => true],
+            'claude-sonnet-4-5-20250929' => ['context' => 200000, 'vision' => true, 'tools' => true, 'thinking' => true, 'computer_use' => true],
+            'claude-haiku-4-5-20251101' => ['context' => 200000, 'vision' => true, 'tools' => true, 'thinking' => true, 'computer_use' => true],
+
+            // Claude 4 Series (May 2025)
             'claude-opus-4-20250514' => ['context' => 200000, 'vision' => true, 'tools' => true, 'thinking' => true],
+            'claude-sonnet-4-20250514' => ['context' => 200000, 'vision' => true, 'tools' => true, 'thinking' => true],
+
+            // Claude 3.5 Series (Legacy)
             'claude-3-5-sonnet-20241022' => ['context' => 200000, 'vision' => true, 'tools' => true],
             'claude-3-5-haiku-20241022' => ['context' => 200000, 'vision' => true, 'tools' => true],
             'claude-3-opus-20240229' => ['context' => 200000, 'vision' => true, 'tools' => true],

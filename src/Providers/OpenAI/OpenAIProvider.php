@@ -319,19 +319,33 @@ class OpenAIProvider extends BaseProvider implements EmbeddingInterface, ImageGe
     public function listModels(): array
     {
         return [
+            // GPT-4.1 Series (2025) - 1M context, improved coding
+            'gpt-4.1' => ['context' => 1000000, 'vision' => true, 'tools' => true],
+            'gpt-4.1-mini' => ['context' => 1000000, 'vision' => true, 'tools' => true],
+            'gpt-4.1-nano' => ['context' => 1000000, 'vision' => true, 'tools' => true],
+
+            // Reasoning Models (o-series)
+            'o3' => ['context' => 200000, 'vision' => true, 'tools' => true, 'reasoning' => true],
+            'o3-pro' => ['context' => 200000, 'vision' => true, 'tools' => true, 'reasoning' => true],
+            'o3-mini' => ['context' => 200000, 'vision' => true, 'tools' => true, 'reasoning' => true],
+            'o4-mini' => ['context' => 200000, 'vision' => true, 'tools' => true, 'reasoning' => true],
+            'o1' => ['context' => 200000, 'vision' => true, 'tools' => false, 'reasoning' => true],
+            'o1-mini' => ['context' => 128000, 'vision' => false, 'tools' => false, 'reasoning' => true],
+
+            // GPT-4o Series
             'gpt-4o' => ['context' => 128000, 'vision' => true, 'tools' => true],
             'gpt-4o-mini' => ['context' => 128000, 'vision' => true, 'tools' => true],
+            'gpt-4o-audio-preview' => ['context' => 128000, 'vision' => true, 'tools' => true, 'audio' => true],
             'gpt-4-turbo' => ['context' => 128000, 'vision' => true, 'tools' => true],
-            'gpt-4' => ['context' => 8192, 'vision' => false, 'tools' => true],
-            'gpt-3.5-turbo' => ['context' => 16385, 'vision' => false, 'tools' => true],
-            'o1' => ['context' => 200000, 'vision' => true, 'tools' => false],
-            'o1-mini' => ['context' => 128000, 'vision' => false, 'tools' => false],
-            'o3-mini' => ['context' => 200000, 'vision' => true, 'tools' => true],
+
+            // Embeddings
             'text-embedding-3-small' => ['dimensions' => 1536, 'type' => 'embedding'],
             'text-embedding-3-large' => ['dimensions' => 3072, 'type' => 'embedding'],
+
+            // Image Generation
             'gpt-image-1.5' => ['type' => 'image'],
-            'dall-e-3' => ['type' => 'image'],
-            'dall-e-2' => ['type' => 'image'],
+            'dall-e-3' => ['type' => 'image', 'legacy' => true],
+            'dall-e-2' => ['type' => 'image', 'legacy' => true],
         ];
     }
 }

@@ -51,8 +51,9 @@ echo $response->getText();
 $chat = PHPLLM::chat();
 
 // Specific model
-$chat = PHPLLM::chat('gpt-4o');
-$chat = PHPLLM::chat('claude-sonnet-4-20250514');
+$chat = PHPLLM::chat('gpt-4.1');           // OpenAI GPT-4.1 (1M context)
+$chat = PHPLLM::chat('o3-mini');           // OpenAI reasoning model
+$chat = PHPLLM::chat('claude-sonnet-4-5-20250929'); // Latest Claude
 
 // With configuration
 $chat = PHPLLM::chat('gpt-4o')
@@ -89,7 +90,7 @@ $chat->ask('Describe this', with: 'https://example.com/image.png');
 $chat->ask('Compare these', with: ['image1.jpg', 'image2.jpg']);
 
 // PDF (Claude)
-$chat = PHPLLM::chat('claude-sonnet-4-20250514');
+$chat = PHPLLM::chat('claude-sonnet-4-5-20250929');
 $chat->ask('Summarize this document', with: 'report.pdf');
 ```
 
@@ -179,7 +180,7 @@ $image = PHPLLM::paint('A cat', options: [
 // Multiple images
 $images = PHPLLM::paintMany('A dog', count: 3);
 
-// Use legacy DALL-E if needed
+// Use legacy DALL-E 3 if needed (deprecated)
 $image = PHPLLM::paint('A cat', model: 'dall-e-3');
 ```
 
