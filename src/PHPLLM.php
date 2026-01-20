@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace PHPLLM;
 
+use PHPLLM\Contracts\EmbeddingInterface;
+use PHPLLM\Contracts\ImageGenerationInterface;
 use PHPLLM\Contracts\ProviderInterface;
 use PHPLLM\Core\Chat;
 use PHPLLM\Core\Configuration;
+use PHPLLM\Core\Embedding;
+use PHPLLM\Core\Image;
 use PHPLLM\Exceptions\ConfigurationException;
 use PHPLLM\Providers\Anthropic\AnthropicProvider;
 use PHPLLM\Providers\OpenAI\OpenAIProvider;
@@ -27,11 +31,11 @@ use PHPLLM\Providers\OpenAI\OpenAIProvider;
  * $chat = PHPLLM::chat();
  * $response = $chat->ask('What is PHP?');
  *
- * // With specific model
- * $chat = PHPLLM::chat('claude-sonnet-4-20250514');
+ * // Embeddings
+ * $embedding = PHPLLM::embed('Hello world');
  *
- * // With attachments
- * $chat->ask('What is in this image?', with: 'photo.jpg');
+ * // Image generation
+ * $image = PHPLLM::paint('A sunset over mountains');
  * ```
  */
 final class PHPLLM
@@ -40,12 +44,11 @@ final class PHPLLM
     private static array $providers = [
         'openai' => OpenAIProvider::class,
         'anthropic' => AnthropicProvider::class,
-        // 'gemini' => GeminiProvider::class,
     ];
 
     /** @var array<string, string> Model to provider mapping */
     private static array $modelProviders = [
-        // OpenAI
+        // OpenAI Chat
         'gpt-4o' => 'openai',
         'gpt-4o-mini' => 'openai',
         'gpt-4-turbo' => 'openai',
@@ -55,6 +58,15 @@ final class PHPLLM
         'o1-mini' => 'openai',
         'o1-preview' => 'openai',
         'o3-mini' => 'openai',
+
+        // OpenAI Embeddings
+        'text-embedding-3-small' => 'openai',
+        'text-embedding-3-large' => 'openai',
+        'text-embedding-ada-002' => 'openai',
+
+        // OpenAI Images
+        'dall-e-3' => 'openai',
+        'dall-e-2' => 'openai',
 
         // Anthropic
         'claude-sonnet-4-20250514' => 'anthropic',
@@ -106,6 +118,82 @@ final class PHPLLM
     }
 
     /**
+     * Generate embeddings for text.
+     *
+     * @param string|array<string> $input Text or array of texts to embed
+     * @param string|null $model Embedding model (default: text-embedding-3-small)
+     * @param array<string, mixed> $options Additional options
+     * @return Embedding|array<Embedding>
+     */
+    public static function embed(
+        string|array $input,
+        ?string $model = null,
+        array $options = []
+    ): Embedding|array {
+        $model = $model ?? 'text-embedding-3-small';
+        $provider = self::detectProvider($model);
+        $providerInstance = self::getProvider($provider);
+
+        if (!$providerInstance instanceof EmbeddingInterface) {
+            throw new ConfigurationException("Provider '{$provider}' does not support embeddings");
+        }
+
+        $options['model'] = $model;
+        return $providerInstance->embed($input, $options);
+    }
+
+    /**
+     * Generate an image from a prompt.
+     *
+     * @param string $prompt Description of the image to generate
+     * @param string|null $model Image model (default: dall-e-3)
+     * @param array<string, mixed> $options Additional options (size, quality, style)
+     */
+    public static function paint(
+        string $prompt,
+        ?string $model = null,
+        array $options = []
+    ): Image {
+        $model = $model ?? 'dall-e-3';
+        $provider = self::detectProvider($model);
+        $providerInstance = self::getProvider($provider);
+
+        if (!$providerInstance instanceof ImageGenerationInterface) {
+            throw new ConfigurationException("Provider '{$provider}' does not support image generation");
+        }
+
+        $options['model'] = $model;
+        return $providerInstance->generateImage($prompt, $options);
+    }
+
+    /**
+     * Generate multiple images from a prompt.
+     *
+     * @param string $prompt Description of the images to generate
+     * @param int $count Number of images to generate
+     * @param string|null $model Image model (default: dall-e-3)
+     * @param array<string, mixed> $options Additional options
+     * @return array<Image>
+     */
+    public static function paintMany(
+        string $prompt,
+        int $count = 2,
+        ?string $model = null,
+        array $options = []
+    ): array {
+        $model = $model ?? 'dall-e-3';
+        $provider = self::detectProvider($model);
+        $providerInstance = self::getProvider($provider);
+
+        if (!$providerInstance instanceof ImageGenerationInterface) {
+            throw new ConfigurationException("Provider '{$provider}' does not support image generation");
+        }
+
+        $options['model'] = $model;
+        return $providerInstance->generateImages($prompt, $count, $options);
+    }
+
+    /**
      * Register a custom provider.
      *
      * @param class-string<ProviderInterface> $providerClass
@@ -149,6 +237,10 @@ final class PHPLLM
 
         // Check prefix patterns
         if (str_starts_with($model, 'gpt-') || str_starts_with($model, 'o1') || str_starts_with($model, 'o3')) {
+            return 'openai';
+        }
+
+        if (str_starts_with($model, 'text-embedding-') || str_starts_with($model, 'dall-e')) {
             return 'openai';
         }
 

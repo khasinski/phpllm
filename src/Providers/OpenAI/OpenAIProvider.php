@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace PHPLLM\Providers\OpenAI;
 
+use PHPLLM\Contracts\EmbeddingInterface;
+use PHPLLM\Contracts\ImageGenerationInterface;
 use PHPLLM\Core\Chunk;
 use PHPLLM\Core\Content;
+use PHPLLM\Core\Embedding;
+use PHPLLM\Core\Image;
 use PHPLLM\Core\Message;
 use PHPLLM\Core\Role;
 use PHPLLM\Core\Tokens;
@@ -15,11 +19,14 @@ use PHPLLM\Providers\BaseProvider;
 /**
  * OpenAI API provider.
  *
- * Supports GPT-4, GPT-3.5, O1 models with chat, vision, tools, and streaming.
+ * Supports GPT-4, GPT-3.5, O1 models with chat, vision, tools, streaming,
+ * embeddings, and image generation.
  */
-class OpenAIProvider extends BaseProvider
+class OpenAIProvider extends BaseProvider implements EmbeddingInterface, ImageGenerationInterface
 {
-    protected array $capabilities = ['chat', 'vision', 'tools', 'streaming', 'json_mode'];
+    protected array $capabilities = [
+        'chat', 'vision', 'tools', 'streaming', 'json_mode', 'embeddings', 'images'
+    ];
 
     public function getSlug(): string
     {
@@ -35,6 +42,100 @@ class OpenAIProvider extends BaseProvider
     {
         return $this->config->getOpenaiApiKey();
     }
+
+    // =========================================================================
+    // Embeddings
+    // =========================================================================
+
+    public function embed(string|array $input, array $options = []): Embedding|array
+    {
+        $url = $this->getApiBase() . '/embeddings';
+        $model = $options['model'] ?? 'text-embedding-3-small';
+
+        $payload = [
+            'model' => $model,
+            'input' => $input,
+        ];
+
+        if (isset($options['dimensions'])) {
+            $payload['dimensions'] = $options['dimensions'];
+        }
+
+        $response = $this->connection->post($url, $this->getHeaders(), $payload);
+
+        $tokens = null;
+        if (isset($response['usage'])) {
+            $tokens = Tokens::fromArray($response['usage']);
+        }
+
+        // Handle multiple inputs
+        if (is_array($input)) {
+            return array_map(function ($data) use ($model, $tokens) {
+                return new Embedding(
+                    vector: $data['embedding'],
+                    dimensions: count($data['embedding']),
+                    model: $model,
+                    tokens: $tokens,
+                );
+            }, $response['data']);
+        }
+
+        // Single input
+        $data = $response['data'][0];
+        return new Embedding(
+            vector: $data['embedding'],
+            dimensions: count($data['embedding']),
+            model: $model,
+            tokens: $tokens,
+        );
+    }
+
+    // =========================================================================
+    // Image Generation
+    // =========================================================================
+
+    public function generateImage(string $prompt, array $options = []): Image
+    {
+        $images = $this->generateImages($prompt, 1, $options);
+        return $images[0];
+    }
+
+    public function generateImages(string $prompt, int $count, array $options = []): array
+    {
+        $url = $this->getApiBase() . '/images/generations';
+        $model = $options['model'] ?? 'dall-e-3';
+
+        $payload = [
+            'model' => $model,
+            'prompt' => $prompt,
+            'n' => $count,
+            'size' => $options['size'] ?? '1024x1024',
+            'response_format' => $options['response_format'] ?? 'url',
+        ];
+
+        if (isset($options['quality'])) {
+            $payload['quality'] = $options['quality'];
+        }
+
+        if (isset($options['style'])) {
+            $payload['style'] = $options['style'];
+        }
+
+        $response = $this->connection->post($url, $this->getHeaders(), $payload);
+
+        return array_map(function ($data) use ($model) {
+            return new Image(
+                url: $data['url'] ?? null,
+                base64: $data['b64_json'] ?? null,
+                revisedPrompt: $data['revised_prompt'] ?? null,
+                model: $model,
+            );
+        }, $response['data']);
+    }
+
+    // =========================================================================
+    // Chat Completions
+    // =========================================================================
 
     protected function renderPayload(array $messages, array $options): array
     {
@@ -150,8 +251,6 @@ class OpenAIProvider extends BaseProvider
                     ];
                 }
             }
-            // PDFs and other files would need special handling
-            // OpenAI doesn't natively support PDFs in vision
         }
 
         return $parts;
@@ -227,8 +326,11 @@ class OpenAIProvider extends BaseProvider
             'gpt-3.5-turbo' => ['context' => 16385, 'vision' => false, 'tools' => true],
             'o1' => ['context' => 200000, 'vision' => true, 'tools' => false],
             'o1-mini' => ['context' => 128000, 'vision' => false, 'tools' => false],
-            'o1-preview' => ['context' => 128000, 'vision' => false, 'tools' => false],
             'o3-mini' => ['context' => 200000, 'vision' => true, 'tools' => true],
+            'text-embedding-3-small' => ['dimensions' => 1536, 'type' => 'embedding'],
+            'text-embedding-3-large' => ['dimensions' => 3072, 'type' => 'embedding'],
+            'dall-e-3' => ['type' => 'image'],
+            'dall-e-2' => ['type' => 'image'],
         ];
     }
 }

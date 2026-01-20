@@ -41,10 +41,18 @@ final class Connection
      */
     public function post(string $url, array $headers, array $body): array
     {
+        $startTime = microtime(true);
+
+        Logger::logRequest('POST', $url, $headers, $body);
+
         $response = $this->request('POST', $url, $headers, $body);
         $content = $response->getBody()->getContents();
+        $decoded = json_decode($content, true) ?? [];
 
-        return json_decode($content, true) ?? [];
+        $duration = microtime(true) - $startTime;
+        Logger::logResponse($response->getStatusCode(), $decoded, $duration);
+
+        return $decoded;
     }
 
     /**
@@ -134,10 +142,19 @@ final class Connection
 
                 return $this->client->request($method, $url, $options);
             } catch (ClientException $e) {
+                Logger::error("Client error: {$e->getMessage()}", [
+                    'status' => $e->getResponse()->getStatusCode(),
+                    'url' => $url,
+                ]);
                 $this->handleClientException($e);
             } catch (ServerException $e) {
                 $attempts++;
+                Logger::warning("Server error (attempt {$attempts}/{$maxRetries}): {$e->getMessage()}", [
+                    'status' => $e->getResponse()->getStatusCode(),
+                    'url' => $url,
+                ]);
                 if ($attempts >= $maxRetries) {
+                    Logger::error("Max retries exceeded for server error", ['url' => $url]);
                     throw new ApiException(
                         "Server error after {$maxRetries} retries: " . $e->getMessage(),
                         $e->getCode(),
@@ -150,7 +167,11 @@ final class Connection
                 usleep((int) (pow(2, $attempts) * 100000));
             } catch (ConnectException $e) {
                 $attempts++;
+                Logger::warning("Connection error (attempt {$attempts}/{$maxRetries}): {$e->getMessage()}", [
+                    'url' => $url,
+                ]);
                 if ($attempts >= $maxRetries) {
+                    Logger::error("Max retries exceeded for connection error", ['url' => $url]);
                     throw new ApiException(
                         "Connection failed after {$maxRetries} retries: " . $e->getMessage(),
                         0,

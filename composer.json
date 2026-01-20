@@ -27,9 +27,13 @@
         "league/mime-type-detection": "^1.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^10.0",
+        "friendsofphp/php-cs-fixer": "^3.0",
+        "php-vcr/php-vcr": "^1.6",
         "phpstan/phpstan": "^1.10",
-        "friendsofphp/php-cs-fixer": "^3.0"
+        "phpunit/phpunit": "^10.0"
+    },
+    "suggest": {
+        "illuminate/support": "Required for Laravel integration (^10.0|^11.0)"
     },
     "autoload": {
         "psr-4": {

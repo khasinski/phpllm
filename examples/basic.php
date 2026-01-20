@@ -67,26 +67,6 @@ $response = $chat->ask('Say hello in PHP style!');
 echo "Response: " . $response->getText() . "\n\n";
 
 // =============================================================================
-// With Image (Vision)
-// =============================================================================
-
-echo "=== Vision Example ===\n";
-
-$chat = PHPLLM::chat('gpt-4o');
-// $response = $chat->ask(
-//     'What is in this image?',
-//     with: 'path/to/image.jpg'  // Local file
-// );
-
-// Or with URL:
-// $response = $chat->ask(
-//     'What is in this image?',
-//     with: 'https://example.com/image.jpg'
-// );
-
-echo "(Skipped - uncomment and provide an image path to test)\n\n";
-
-// =============================================================================
 // Streaming
 // =============================================================================
 
@@ -157,6 +137,29 @@ $chat = PHPLLM::chat('gpt-4o')
 
 $response = $chat->ask('What is the weather in Tokyo?');
 echo "Response: " . $response->getText() . "\n\n";
+
+// =============================================================================
+// Embeddings
+// =============================================================================
+
+echo "=== Embeddings ===\n";
+
+$embedding = PHPLLM::embed('Hello, world!');
+echo "Dimensions: " . $embedding->dimensions . "\n";
+echo "First 5 values: " . implode(', ', array_slice($embedding->vector, 0, 5)) . "...\n";
+
+// Compare similarity
+$embeddings = PHPLLM::embed([
+    'The cat sat on the mat',
+    'A feline rested on the rug',
+    'JavaScript is a programming language',
+]);
+
+$similarity1 = $embeddings[0]->similarity($embeddings[1]);
+$similarity2 = $embeddings[0]->similarity($embeddings[2]);
+
+echo "Similarity (cat/feline): " . round($similarity1, 4) . "\n";
+echo "Similarity (cat/javascript): " . round($similarity2, 4) . "\n\n";
 
 // =============================================================================
 // Token Usage
