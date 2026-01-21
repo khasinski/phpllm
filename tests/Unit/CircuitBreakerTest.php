@@ -15,7 +15,7 @@ class CircuitBreakerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        CircuitBreaker::resetAll();
+        // Each test gets a fresh CircuitBreaker instance (no shared state)
         $this->breaker = new CircuitBreaker(
             failureThreshold: 3,
             cooldownSeconds: 1,

@@ -196,15 +196,18 @@ class GeminiProvider extends BaseProvider
 
         // Add attachments
         foreach ($content->attachments as $attachment) {
-            if ($attachment->isImage()) {
+            if ($attachment->isImage() || $attachment->isPdf()) {
                 if ($attachment->isUrl()) {
-                    // Gemini requires inline data, fetch the URL
-                    $parts[] = [
-                        'inlineData' => [
-                            'mimeType' => $attachment->getMimeType(),
-                            'data' => $attachment->getBase64(),
-                        ],
-                    ];
+                    // Gemini requires inline data, fetch the URL content
+                    $imageData = $this->fetchUrlContent($attachment->getUrl());
+                    if ($imageData !== null) {
+                        $parts[] = [
+                            'inlineData' => [
+                                'mimeType' => $attachment->getMimeType(),
+                                'data' => base64_encode($imageData),
+                            ],
+                        ];
+                    }
                 } else {
                     $parts[] = [
                         'inlineData' => [
@@ -217,6 +220,22 @@ class GeminiProvider extends BaseProvider
         }
 
         return $parts;
+    }
+
+    /**
+     * Fetch content from a URL.
+     */
+    private function fetchUrlContent(string $url): ?string
+    {
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 30,
+                'user_agent' => 'PHPLLM/1.0',
+            ],
+        ]);
+
+        $content = @file_get_contents($url, false, $context);
+        return $content !== false ? $content : null;
     }
 
     /**
@@ -317,12 +336,16 @@ class GeminiProvider extends BaseProvider
     public function listModels(): array
     {
         return [
+            // Gemini 2.5 Series (Latest)
+            'gemini-2.5-flash' => ['context' => 1048576, 'vision' => true, 'tools' => true, 'thinking' => true],
+            'gemini-2.5-pro' => ['context' => 1048576, 'vision' => true, 'tools' => true, 'thinking' => true],
+
             // Gemini 2.0 Series
             'gemini-2.0-flash' => ['context' => 1000000, 'vision' => true, 'tools' => true],
             'gemini-2.0-flash-lite' => ['context' => 1000000, 'vision' => true, 'tools' => true],
             'gemini-2.0-pro' => ['context' => 1000000, 'vision' => true, 'tools' => true],
 
-            // Gemini 1.5 Series
+            // Gemini 1.5 Series (Legacy)
             'gemini-1.5-pro' => ['context' => 2000000, 'vision' => true, 'tools' => true],
             'gemini-1.5-flash' => ['context' => 1000000, 'vision' => true, 'tools' => true],
             'gemini-1.5-flash-8b' => ['context' => 1000000, 'vision' => true, 'tools' => true],

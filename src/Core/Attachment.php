@@ -43,6 +43,38 @@ final class Attachment
     }
 
     /**
+     * Create an image attachment from a file path.
+     */
+    public static function image(string $path): self
+    {
+        return self::fromPath($path);
+    }
+
+    /**
+     * Create an image attachment from a URL.
+     */
+    public static function imageUrl(string $url): self
+    {
+        return self::fromUrl($url);
+    }
+
+    /**
+     * Create a PDF attachment from a file path.
+     */
+    public static function pdf(string $path): self
+    {
+        return self::fromPath($path);
+    }
+
+    /**
+     * Create an audio attachment from a file path.
+     */
+    public static function audio(string $path): self
+    {
+        return self::fromPath($path);
+    }
+
+    /**
      * Create attachment from raw content.
      */
     public static function fromContent(string $content, string $mimeType, ?string $filename = null): self

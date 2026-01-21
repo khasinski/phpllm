@@ -80,18 +80,27 @@ $response = $chat->ask('What is my name?');
 ```php
 $chat = PHPLLM::chat('gpt-4o');
 
-// Local file
-$chat->ask('What is in this image?', with: 'photo.jpg');
+// Use explicit named arguments for clarity
+$chat->ask('What is in this image?', image: 'photo.jpg');
+$chat->ask('Describe this', image: 'https://example.com/image.png');
+$chat->ask('Compare these', image: ['image1.jpg', 'image2.jpg']);
 
-// URL
-$chat->ask('Describe this', with: 'https://example.com/image.png');
-
-// Multiple files
-$chat->ask('Compare these', with: ['image1.jpg', 'image2.jpg']);
-
-// PDF (Claude)
+// PDF documents
 $chat = PHPLLM::chat('claude-sonnet-4-5-20250929');
-$chat->ask('Summarize this document', with: 'report.pdf');
+$chat->ask('Summarize this document', pdf: 'report.pdf');
+
+// Audio files
+$chat->ask('Transcribe this', audio: 'recording.mp3');
+
+// Generic file (auto-detected type)
+$chat->ask('Process this', file: 'document.pdf');
+
+// Using Attachment objects for more control
+use PHPLLM\Core\Attachment;
+
+$chat->ask('Analyze', image: Attachment::image('/path/to/photo.jpg'));
+$chat->ask('From URL', image: Attachment::imageUrl('https://example.com/img.png'));
+$chat->ask('Read PDF', pdf: Attachment::pdf('/path/to/doc.pdf'));
 ```
 
 ### Streaming
@@ -282,15 +291,44 @@ PHPLLM::configure([
 
     // Defaults
     'default_model' => 'gpt-4o-mini',
-    'default_provider' => 'openai',
+    'default_provider' => 'openai',  // Used for unknown models
 
     // Request settings
     'request_timeout' => 120,
     'max_retries' => 3,
 
-    // Logging
+    // Logging (PSR-3 compatible)
     'logging_enabled' => true,
+    'logger' => $psrLogger,  // Auto-wired when both are set
+
+    // Model aliases
+    'model_aliases' => [
+        'fast' => 'gpt-4o-mini',
+        'smart' => 'claude-opus-4-5-20251101',
+    ],
 ]);
+```
+
+### Dependency Injection
+
+For DI containers, instantiate classes directly instead of using the facade:
+
+```php
+use PHPLLM\Core\Configuration;
+use PHPLLM\Core\Chat;
+use PHPLLM\Providers\OpenAI\OpenAIProvider;
+
+// Create configuration for DI
+$config = new Configuration([
+    'openai_api_key' => $apiKey,
+    'default_model' => 'gpt-4o',
+]);
+
+// Inject provider and create chat
+$provider = new OpenAIProvider($config);
+$chat = new Chat($provider, 'gpt-4o');
+
+$response = $chat->ask('Hello!');
 ```
 
 ## Error Handling
@@ -299,6 +337,8 @@ PHPLLM::configure([
 use PHPLLM\Exceptions\RateLimitException;
 use PHPLLM\Exceptions\AuthenticationException;
 use PHPLLM\Exceptions\ApiException;
+use PHPLLM\Exceptions\ConfigurationException;
+use PHPLLM\Exceptions\ToolExecutionException;
 
 try {
     $response = $chat->ask('Hello');
@@ -311,6 +351,27 @@ try {
     // Other API error
     echo $e->getStatusCode();
     echo $e->getMessage();
+}
+
+// Configuration errors (invalid keys, unknown models)
+try {
+    PHPLLM::configure(['invalid_key' => 'value']);
+} catch (ConfigurationException $e) {
+    // Unknown configuration keys: invalid_key
+}
+
+try {
+    PHPLLM::chat('unknown-model-xyz');
+} catch (ConfigurationException $e) {
+    // Cannot detect provider for model 'unknown-model-xyz'
+}
+
+// Tool execution errors
+try {
+    $chat->withTool(MyTool::class)->ask('Use the tool');
+} catch (ToolExecutionException $e) {
+    echo "Tool '{$e->toolName}' failed: {$e->getMessage()}";
+    echo "Arguments: " . json_encode($e->arguments);
 }
 ```
 

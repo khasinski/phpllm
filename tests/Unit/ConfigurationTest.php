@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace PHPLLM\Tests\Unit;
 
 use PHPLLM\Core\Configuration;
+use PHPLLM\Exceptions\ConfigurationException;
 use PHPLLM\Tests\TestCase;
+use Psr\Log\NullLogger;
 
 class ConfigurationTest extends TestCase
 {
@@ -73,5 +75,81 @@ class ConfigurationTest extends TestCase
         Configuration::reset();
 
         $this->assertNull(Configuration::getInstance()->getOpenaiApiKey());
+    }
+
+    public function testUnknownConfigKeyThrowsException(): void
+    {
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Unknown configuration keys: invalid_key');
+
+        Configuration::configure([
+            'invalid_key' => 'value',
+        ]);
+    }
+
+    public function testMultipleUnknownKeysListedInException(): void
+    {
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Unknown configuration keys: foo, bar');
+
+        Configuration::configure([
+            'foo' => 'value1',
+            'bar' => 'value2',
+        ]);
+    }
+
+    public function testDirectInstantiationForDI(): void
+    {
+        $config = new Configuration([
+            'openai_api_key' => 'di-key',
+            'default_model' => 'gpt-4o',
+        ]);
+
+        $this->assertEquals('di-key', $config->getOpenaiApiKey());
+        $this->assertEquals('gpt-4o', $config->getDefaultModel());
+    }
+
+    public function testDirectInstantiationValidatesKeys(): void
+    {
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Unknown configuration keys');
+
+        new Configuration(['bad_key' => 'value']);
+    }
+
+    public function testLoggerAutoWiring(): void
+    {
+        $logger = new NullLogger();
+
+        Configuration::configure([
+            'logging_enabled' => true,
+            'logger' => $logger,
+        ]);
+
+        $config = Configuration::getInstance();
+        $this->assertTrue($config->isLoggingEnabled());
+        $this->assertSame($logger, $config->getLogger());
+    }
+
+    public function testModelAliasResolution(): void
+    {
+        $config = Configuration::getInstance();
+
+        // Built-in aliases
+        $this->assertEquals('gpt-4o-mini', $config->resolveModelAlias('fast'));
+        $this->assertEquals('claude-sonnet-4-5-20250929', $config->resolveModelAlias('claude'));
+
+        // Unknown alias returns original
+        $this->assertEquals('custom-model', $config->resolveModelAlias('custom-model'));
+    }
+
+    public function testCustomModelAlias(): void
+    {
+        Configuration::configure([
+            'model_aliases' => ['mymodel' => 'gpt-4o'],
+        ]);
+
+        $config = Configuration::getInstance();
+        $this->assertEquals('gpt-4o', $config->resolveModelAlias('mymodel'));
     }
 }

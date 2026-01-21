@@ -6,6 +6,7 @@ namespace PHPLLM\Core;
 
 use PHPLLM\Contracts\ProviderInterface;
 use PHPLLM\Contracts\ToolInterface;
+use PHPLLM\Exceptions\ToolExecutionException;
 
 /**
  * Main chat interface for interacting with LLMs.
@@ -153,20 +154,89 @@ final class Chat
     /**
      * Send a message and get a response.
      *
-     * @param string|array<string>|Attachment|array<Attachment>|null $with Attachments
+     * Use named arguments for explicit content types:
+     * - $image: Image file path, URL, or Attachment
+     * - $pdf: PDF file path or Attachment
+     * - $audio: Audio file path or Attachment
+     * - $file: Any file (auto-detected type)
+     *
+     * Example:
+     * ```php
+     * $chat->ask('What is in this image?', image: '/path/to/photo.jpg');
+     * $chat->ask('Summarize this', pdf: '/path/to/doc.pdf');
+     * ```
+     *
+     * @param string|array<string>|Attachment|array<Attachment>|null $image Image attachment(s)
+     * @param string|array<string>|Attachment|array<Attachment>|null $pdf PDF attachment(s)
+     * @param string|array<string>|Attachment|array<Attachment>|null $audio Audio attachment(s)
+     * @param string|array<string>|Attachment|array<Attachment>|null $file Any file attachment(s)
      * @param callable(Chunk): void|null $stream Streaming callback
      */
     public function ask(
         string $message,
-        string|array|Attachment|null $with = null,
+        string|array|Attachment|null $image = null,
+        string|array|Attachment|null $pdf = null,
+        string|array|Attachment|null $audio = null,
+        string|array|Attachment|null $file = null,
         ?callable $stream = null,
     ): Message {
+        // Collect all attachments
+        $attachments = $this->collectAttachments($image, $pdf, $audio, $file);
+
         // Add user message
-        $userMessage = Message::user($message, $with);
+        $userMessage = $attachments !== null
+            ? Message::user($message, $attachments)
+            : Message::user($message);
         $this->addMessage($userMessage);
 
         // Complete and handle tool calls
         return $this->completeWithToolCalls($stream);
+    }
+
+    /**
+     * Collect attachments from named parameters.
+     *
+     * @return array<Attachment>|null
+     */
+    private function collectAttachments(
+        string|array|Attachment|null $image,
+        string|array|Attachment|null $pdf,
+        string|array|Attachment|null $audio,
+        string|array|Attachment|null $file,
+    ): ?array {
+        $attachments = [];
+
+        foreach ([$image, $pdf, $audio, $file] as $input) {
+            if ($input === null) {
+                continue;
+            }
+
+            if ($input instanceof Attachment) {
+                $attachments[] = $input;
+            } elseif (is_string($input)) {
+                $attachments[] = $this->createAttachment($input);
+            } elseif (is_array($input)) {
+                foreach ($input as $item) {
+                    $attachments[] = $item instanceof Attachment
+                        ? $item
+                        : $this->createAttachment($item);
+                }
+            }
+        }
+
+        return empty($attachments) ? null : $attachments;
+    }
+
+    /**
+     * Create an attachment from a string (path or URL).
+     */
+    private function createAttachment(string $value): Attachment
+    {
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return Attachment::fromUrl($value);
+        }
+
+        return Attachment::fromPath($value);
     }
 
     /**
@@ -279,17 +349,15 @@ final class Chat
 
     /**
      * Execute a tool and return the result.
+     *
+     * @throws ToolExecutionException If tool is unknown or execution fails
      */
     private function executeTool(ToolCall $toolCall): mixed
     {
         $tool = $this->tools[$toolCall->name] ?? null;
 
         if ($tool === null) {
-            Logger::warning("Unknown tool requested: {$toolCall->name}", [
-                'tool_call_id' => $toolCall->id,
-                'available_tools' => array_keys($this->tools),
-            ]);
-            return ['error' => "Unknown tool: {$toolCall->name}"];
+            throw ToolExecutionException::unknownTool($toolCall, array_keys($this->tools));
         }
 
         try {
@@ -300,19 +368,11 @@ final class Chat
             }
 
             return $result;
+        } catch (ToolExecutionException $e) {
+            // Re-throw if already a ToolExecutionException
+            throw $e;
         } catch (\Exception $e) {
-            // Log tool execution errors with context for debugging
-            Logger::error("Tool execution failed: {$toolCall->name}", [
-                'tool_call_id' => $toolCall->id,
-                'exception_type' => get_class($e),
-                'message' => $e->getMessage(),
-                'arguments' => $toolCall->arguments,
-            ]);
-
-            return [
-                'error' => $e->getMessage(),
-                'error_type' => (new \ReflectionClass($e))->getShortName(),
-            ];
+            throw ToolExecutionException::fromException($e, $toolCall);
         }
     }
 
@@ -353,7 +413,7 @@ final class Chat
 
         if (!empty($this->tools)) {
             $options['tools'] = array_map(
-                fn (ToolInterface $tool) => $tool->toFunctionSchema(),
+                fn (ToolInterface $tool) => $tool->toSchema(),
                 array_values($this->tools),
             );
         }

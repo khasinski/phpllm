@@ -62,6 +62,7 @@ class OllamaProvider extends BaseProvider
             'model' => $options['model'] ?? 'llama3.2',
             'messages' => array_map([$this, 'renderMessage'], $messages),
             'stream' => $options['stream'] ?? false,
+            'options' => [],
         ];
 
         if (isset($options['temperature'])) {
@@ -70,6 +71,11 @@ class OllamaProvider extends BaseProvider
 
         if (isset($options['max_tokens'])) {
             $payload['options']['num_predict'] = $options['max_tokens'];
+        }
+
+        // Remove empty options array
+        if (empty($payload['options'])) {
+            unset($payload['options']);
         }
 
         if (isset($options['tools']) && !empty($options['tools'])) {

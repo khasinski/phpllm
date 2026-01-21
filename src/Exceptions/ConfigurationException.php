@@ -18,4 +18,13 @@ class ConfigurationException extends PHPLLMException
     {
         return new self("Unknown provider: {$provider}");
     }
+
+    public static function unknownModel(string $model): self
+    {
+        return new self(
+            "Cannot detect provider for model '{$model}'. " .
+            "Either use a known model, register the model with PHPLLM::registerModel(), " .
+            "or set a default_provider in configuration."
+        );
+    }
 }

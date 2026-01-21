@@ -71,10 +71,10 @@ class ToolTest extends TestCase
         $this->assertEquals('celsius', $result['unit']);
     }
 
-    public function testToFunctionSchema(): void
+    public function testToSchema(): void
     {
         $tool = new GetWeatherTool();
-        $schema = $tool->toFunctionSchema();
+        $schema = $tool->toSchema();
 
         $this->assertEquals('function', $schema['type']);
         $this->assertEquals('get_weather', $schema['function']['name']);

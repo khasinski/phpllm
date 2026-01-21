@@ -35,9 +35,14 @@ interface ToolInterface
     public function execute(array $arguments): mixed;
 
     /**
-     * Convert tool to OpenAI function schema format.
+     * Convert tool to schema format for API requests.
+     *
+     * Returns a canonical schema that providers transform to their format:
+     * - OpenAI/Ollama: Uses directly as function call format
+     * - Anthropic: Transforms to {name, description, input_schema}
+     * - Gemini: Transforms to {name, description, parameters}
      *
      * @return array<string, mixed>
      */
-    public function toFunctionSchema(): array;
+    public function toSchema(): array;
 }

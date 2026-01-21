@@ -18,6 +18,9 @@ use PHPLLM\Exceptions\ApiException;
  * - CLOSED: Normal operation, requests pass through
  * - OPEN: Too many failures, requests fail immediately
  * - HALF_OPEN: Testing if service recovered, one request allowed
+ *
+ * Each CircuitBreaker instance maintains its own state, allowing for
+ * isolated circuit breakers per provider or connection.
  */
 final class CircuitBreaker
 {
@@ -26,7 +29,7 @@ final class CircuitBreaker
     private const STATE_HALF_OPEN = 'half_open';
 
     /** @var array<string, array{state: string, failures: int, last_failure: float, successes: int}> */
-    private static array $circuits = [];
+    private array $circuits = [];
 
     private int $failureThreshold;
     private int $cooldownSeconds;
@@ -94,15 +97,15 @@ final class CircuitBreaker
             if ($circuit['successes'] >= $this->successThreshold) {
                 // Service recovered, close the circuit
                 $this->setState($endpoint, self::STATE_CLOSED);
-                self::$circuits[$endpoint]['failures'] = 0;
-                self::$circuits[$endpoint]['successes'] = 0;
+                $this->circuits[$endpoint]['failures'] = 0;
+                $this->circuits[$endpoint]['successes'] = 0;
                 Logger::info("Circuit breaker closed for: {$endpoint}");
             } else {
-                self::$circuits[$endpoint] = $circuit;
+                $this->circuits[$endpoint] = $circuit;
             }
         } elseif ($circuit['state'] === self::STATE_CLOSED && $circuit['failures'] > 0) {
             // Reset failure count on success
-            self::$circuits[$endpoint]['failures'] = 0;
+            $this->circuits[$endpoint]['failures'] = 0;
         }
     }
 
@@ -116,15 +119,15 @@ final class CircuitBreaker
         if ($circuit['state'] === self::STATE_HALF_OPEN) {
             // Failed during recovery attempt, reopen the circuit
             $this->setState($endpoint, self::STATE_OPEN);
-            self::$circuits[$endpoint]['last_failure'] = microtime(true);
-            self::$circuits[$endpoint]['successes'] = 0;
+            $this->circuits[$endpoint]['last_failure'] = microtime(true);
+            $this->circuits[$endpoint]['successes'] = 0;
             Logger::warning("Circuit breaker reopened for: {$endpoint}");
             return;
         }
 
         $circuit['failures']++;
         $circuit['last_failure'] = microtime(true);
-        self::$circuits[$endpoint] = $circuit;
+        $this->circuits[$endpoint] = $circuit;
 
         if ($circuit['failures'] >= $this->failureThreshold && $circuit['state'] === self::STATE_CLOSED) {
             $this->setState($endpoint, self::STATE_OPEN);
@@ -142,8 +145,8 @@ final class CircuitBreaker
      */
     public function getCircuit(string $endpoint): array
     {
-        if (!isset(self::$circuits[$endpoint])) {
-            self::$circuits[$endpoint] = [
+        if (!isset($this->circuits[$endpoint])) {
+            $this->circuits[$endpoint] = [
                 'state' => self::STATE_CLOSED,
                 'failures' => 0,
                 'last_failure' => 0.0,
@@ -151,7 +154,7 @@ final class CircuitBreaker
             ];
         }
 
-        return self::$circuits[$endpoint];
+        return $this->circuits[$endpoint];
     }
 
     /**
@@ -163,26 +166,26 @@ final class CircuitBreaker
     }
 
     /**
-     * Reset circuit for an endpoint (useful for testing).
+     * Reset circuit for an endpoint.
      */
     public function reset(string $endpoint): void
     {
-        unset(self::$circuits[$endpoint]);
+        unset($this->circuits[$endpoint]);
     }
 
     /**
-     * Reset all circuits (useful for testing).
+     * Reset all circuits for this instance.
      */
-    public static function resetAll(): void
+    public function resetAll(): void
     {
-        self::$circuits = [];
+        $this->circuits = [];
     }
 
     private function setState(string $endpoint, string $state): void
     {
-        if (!isset(self::$circuits[$endpoint])) {
+        if (!isset($this->circuits[$endpoint])) {
             $this->getCircuit($endpoint);
         }
-        self::$circuits[$endpoint]['state'] = $state;
+        $this->circuits[$endpoint]['state'] = $state;
     }
 }

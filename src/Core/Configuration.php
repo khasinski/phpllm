@@ -4,14 +4,53 @@ declare(strict_types=1);
 
 namespace PHPLLM\Core;
 
+use PHPLLM\Exceptions\ConfigurationException;
+use Psr\Log\LoggerInterface;
+
 /**
- * Global configuration for PHPLLM.
+ * Configuration for PHPLLM.
  *
- * Holds API keys, default settings, and provider-specific configuration.
+ * Can be used as singleton (getInstance) or instantiated directly for DI.
+ *
+ * Example (singleton):
+ * ```php
+ * PHPLLM::configure(['openai_api_key' => 'sk-...']);
+ * ```
+ *
+ * Example (DI):
+ * ```php
+ * $config = new Configuration(['openai_api_key' => 'sk-...']);
+ * $provider = new OpenAIProvider($config);
+ * ```
  */
 final class Configuration
 {
     private static ?self $instance = null;
+
+    /** @var array<string> Valid configuration keys */
+    private const VALID_KEYS = [
+        'openai_api_key',
+        'anthropic_api_key',
+        'gemini_api_key',
+        'mistral_api_key',
+        'deepseek_api_key',
+        'xai_api_key',
+        'perplexity_api_key',
+        'bedrock_access_key_id',
+        'bedrock_secret_access_key',
+        'bedrock_region',
+        'openai_api_base',
+        'ollama_api_base',
+        'default_model',
+        'default_provider',
+        'request_timeout',
+        'max_retries',
+        'logging_enabled',
+        'logger',
+        'model_aliases',
+        'default_temperature',
+        'default_max_tokens',
+    ];
 
     // Provider API keys
     private ?string $openaiApiKey = null;
@@ -39,7 +78,7 @@ final class Configuration
 
     // Logging
     private bool $loggingEnabled = false;
-    private mixed $logger = null;
+    private ?LoggerInterface $logger = null;
 
     // Model aliases
     /** @var array<string, string> */
@@ -59,10 +98,25 @@ final class Configuration
     private ?float $defaultTemperature = null;
     private ?int $defaultMaxTokens = null;
 
-    private function __construct()
+    /**
+     * Create a new Configuration instance.
+     *
+     * @param array<string, mixed> $config Configuration options
+     *
+     * @throws ConfigurationException If unknown configuration keys are provided
+     */
+    public function __construct(array $config = [])
     {
+        if (!empty($config)) {
+            $this->applyConfig($config);
+        }
     }
 
+    /**
+     * Get the global singleton instance.
+     *
+     * For DI usage, prefer `new Configuration()` instead.
+     */
     public static function getInstance(): self
     {
         if (self::$instance === null) {
@@ -73,30 +127,61 @@ final class Configuration
     }
 
     /**
-     * Configure PHPLLM with an array of settings.
+     * Configure the global singleton with an array of settings.
      *
      * @param array<string, mixed> $config
+     *
+     * @throws ConfigurationException If unknown configuration keys are provided
      */
     public static function configure(array $config): self
     {
         $instance = self::getInstance();
-
-        foreach ($config as $key => $value) {
-            $method = 'set' . str_replace('_', '', ucwords($key, '_'));
-            if (method_exists($instance, $method)) {
-                $instance->$method($value);
-            }
-        }
+        $instance->applyConfig($config);
 
         return $instance;
     }
 
     /**
-     * Reset configuration to defaults (useful for testing).
+     * Apply configuration array to this instance.
+     *
+     * @param array<string, mixed> $config
+     *
+     * @throws ConfigurationException If unknown configuration keys are provided
+     */
+    private function applyConfig(array $config): void
+    {
+        // Validate all keys first
+        $unknownKeys = array_diff(array_keys($config), self::VALID_KEYS);
+        if (!empty($unknownKeys)) {
+            throw new ConfigurationException(
+                'Unknown configuration keys: ' . implode(', ', $unknownKeys) .
+                '. Valid keys are: ' . implode(', ', self::VALID_KEYS)
+            );
+        }
+
+        // Apply configuration
+        foreach ($config as $key => $value) {
+            $method = 'set' . str_replace('_', '', ucwords($key, '_'));
+            if (method_exists($this, $method)) {
+                $this->$method($value);
+            }
+        }
+
+        // Wire up logger when both are set
+        if ($this->loggingEnabled && $this->logger !== null) {
+            Logger::setLogger($this->logger);
+        } elseif (!$this->loggingEnabled) {
+            Logger::setLogger(null);
+        }
+    }
+
+    /**
+     * Reset global singleton to defaults (useful for testing).
      */
     public static function reset(): void
     {
         self::$instance = null;
+        Logger::setLogger(null);
     }
 
     // Setters with fluent interface
@@ -212,12 +297,26 @@ final class Configuration
     public function setLoggingEnabled(bool $enabled): self
     {
         $this->loggingEnabled = $enabled;
+
+        // Auto-wire logger when enabled
+        if ($enabled && $this->logger !== null) {
+            Logger::setLogger($this->logger);
+        } elseif (!$enabled) {
+            Logger::setLogger(null);
+        }
+
         return $this;
     }
 
-    public function setLogger(mixed $logger): self
+    public function setLogger(?LoggerInterface $logger): self
     {
         $this->logger = $logger;
+
+        // Auto-wire logger when set
+        if ($this->loggingEnabled && $logger !== null) {
+            Logger::setLogger($logger);
+        }
+
         return $this;
     }
 
@@ -346,7 +445,7 @@ final class Configuration
         return $this->loggingEnabled;
     }
 
-    public function getLogger(): mixed
+    public function getLogger(): ?LoggerInterface
     {
         return $this->logger;
     }

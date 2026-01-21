@@ -134,11 +134,11 @@ abstract class Tool implements ToolInterface
     }
 
     /**
-     * Convert tool to OpenAI function format.
+     * Convert tool to schema format for API requests.
      *
      * @return array<string, mixed>
      */
-    public function toFunctionSchema(): array
+    public function toSchema(): array
     {
         return [
             'type' => 'function',

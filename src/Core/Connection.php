@@ -96,8 +96,6 @@ final class Connection
      */
     public function stream(string $url, array $headers, array $body): Generator
     {
-        $body['stream'] = true;
-
         $request = new Request(
             'POST',
             $url,

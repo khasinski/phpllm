@@ -109,4 +109,26 @@ class PHPLLMTest extends TestCase
 
         $this->assertTrue(true); // No exception = pass
     }
+
+    public function testUnknownModelThrowsException(): void
+    {
+        PHPLLM::configure(['openai_api_key' => 'test']);
+
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage("Cannot detect provider for model 'unknown-model-xyz'");
+
+        PHPLLM::chat('unknown-model-xyz');
+    }
+
+    public function testUnknownModelWithDefaultProviderWorks(): void
+    {
+        PHPLLM::configure([
+            'openai_api_key' => 'test',
+            'default_provider' => 'openai',
+        ]);
+
+        // Should use the default provider instead of throwing
+        $chat = PHPLLM::chat('my-custom-model');
+        $this->assertInstanceOf(Chat::class, $chat);
+    }
 }

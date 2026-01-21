@@ -104,10 +104,16 @@ final class PHPLLM
         'claude-3-5-haiku-20241022' => 'anthropic',
         'claude-3-opus-20240229' => 'anthropic',
 
-        // Gemini
+        // Gemini 2.5 (Latest)
+        'gemini-2.5-flash' => 'gemini',
+        'gemini-2.5-pro' => 'gemini',
+
+        // Gemini 2.0
         'gemini-2.0-flash' => 'gemini',
         'gemini-2.0-flash-lite' => 'gemini',
         'gemini-2.0-pro' => 'gemini',
+
+        // Gemini 1.5 (Legacy)
         'gemini-1.5-pro' => 'gemini',
         'gemini-1.5-flash' => 'gemini',
         'gemini-1.5-flash-8b' => 'gemini',
@@ -318,8 +324,14 @@ final class PHPLLM
             return 'ollama';
         }
 
-        // Default to configured provider or OpenAI
-        return Configuration::getInstance()->getDefaultProvider() ?? 'openai';
+        // Use configured default provider if set
+        $defaultProvider = Configuration::getInstance()->getDefaultProvider();
+        if ($defaultProvider !== null) {
+            return $defaultProvider;
+        }
+
+        // No fallback - throw exception for unknown models
+        throw ConfigurationException::unknownModel($model);
     }
 
     /**

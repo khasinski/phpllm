@@ -91,6 +91,9 @@ abstract class BaseProvider implements ProviderInterface
         $url = $this->getApiBase() . $this->getCompletionEndpoint();
         $payload = $this->renderPayload($messages, $options);
 
+        // Most providers (OpenAI, Anthropic) require stream: true in payload
+        $payload['stream'] = true;
+
         foreach ($this->connection->stream($url, $this->getHeaders(), $payload) as $data) {
             $decoded = json_decode($data, true);
             if ($decoded !== null) {
